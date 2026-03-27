@@ -1,0 +1,17 @@
+# --- Python Environment ---
+.venv/
+__pycache__/
+*.pyc
+
+# --- Data Files (DO NOT UPLOAD THESE) ---
+# We ignore the raw data because it is too large for GitHub
+model_service/data/raw/*.parquet
+model_service/data/raw/*.csv
+model_service/data/processed/
+
+# --- IDE Settings ---
+.vscode/
+.DS_Store
+
+# --- Jupyter Notebooks ---
+.ipynb_checkpoints/
