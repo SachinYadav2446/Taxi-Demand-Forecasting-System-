@@ -1,15 +1,21 @@
 import os
 import glob
 import pandas as pd
+import sys
+import logging
+
+# Add parent directory to path so we can import from backend
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 from sqlalchemy.orm import Session
 from database import engine, SessionLocal
 import models
-import logging
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-RAW_DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "datasets", "raw")
+# Point to root datasets folder
+RAW_DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "datasets", "raw")
 
 def ingest_historical_data():
     if not os.path.exists(RAW_DATA_DIR):

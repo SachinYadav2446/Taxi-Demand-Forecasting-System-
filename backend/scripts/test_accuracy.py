@@ -1,6 +1,12 @@
 import sys
+import os
 import traceback
-sys.path.append('..')
+
+# Add project root and backend folder to path
+current_dir = os.path.dirname(os.path.abspath(__file__))
+sys.path.append(os.path.join(current_dir, "..")) # /backend
+sys.path.append(os.path.join(current_dir, "..", "..")) # project root (for model_service)
+
 from model_service.forecast_core import generate_product_forecast, backtest_models, get_zone_series
 
 print("="*60)

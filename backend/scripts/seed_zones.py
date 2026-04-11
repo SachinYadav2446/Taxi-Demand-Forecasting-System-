@@ -1,5 +1,10 @@
 import csv
 import sys
+import os
+
+# Add parent directory to path so we can import from backend
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 from sqlalchemy.orm import Session
 from database import SessionLocal
 import models
@@ -37,4 +42,6 @@ def seed_zones(csv_path: str):
         db.close()
 
 if __name__ == "__main__":
-    seed_zones("taxi_zone_lookup.csv")
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    default_csv = os.path.join(current_dir, "..", "..", "datasets", "raw", "taxi_zone_lookup.csv")
+    seed_zones(default_csv)

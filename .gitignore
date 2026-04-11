@@ -16,3 +16,8 @@ model_service/data/processed/
 
 # --- Jupyter Notebooks ---
 .ipynb_checkpoints/
+
+# --- Frontend Artifacts ---
+frontend/dist/
+frontend/node_modules/
+frontend/.vite/
