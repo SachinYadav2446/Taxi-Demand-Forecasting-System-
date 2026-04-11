@@ -55,8 +55,17 @@ export const AuthProvider = ({ children }) => {
     clearSession();
   };
 
+  const updateProfile = async (updates) => {
+    const token = localStorage.getItem('token');
+    const res = await api.put('/auth/me', updates, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    setUser(res.data);
+    return res.data;
+  };
+
   return (
-    <AuthContext.Provider value={{ user, login, logout, loading }}>
+    <AuthContext.Provider value={{ user, login, logout, updateProfile, loading }}>
       {children}
     </AuthContext.Provider>
   );

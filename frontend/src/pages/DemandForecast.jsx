@@ -12,6 +12,7 @@ export default function DemandForecast() {
   const [horizon, setHorizon] = useState('hourly');
   const [selectedForecastDate, setSelectedForecastDate] = useState('');
   const [selectedForecastTime, setSelectedForecastTime] = useState('');
+  const [isBeyondThreeMonths, setIsBeyondThreeMonths] = useState(false);
   const [activeRequest, setActiveRequest] = useState(null);
   const [forecastData, setForecastData] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -106,7 +107,7 @@ export default function DemandForecast() {
         }
 
         const res = await api.get(`/forecasts/${activeRequest.zone}?${params.toString()}`);
-        setForecastData(res.data.forecast_values);
+        setForecastData(res.data);
         setLastPredictionMs(Date.now() - requestStartedAt);
       } catch (err) {
         console.error('Failed to load forecast', err);
@@ -164,11 +165,25 @@ export default function DemandForecast() {
     return () => window.clearInterval(intervalId);
   }, [loading]);
 
-  const dateOptions = availableWindow.dates || [];
   const timeOptions = useMemo(() => {
     if (horizon !== 'hourly' || !selectedForecastDate) return [];
-    return (availableWindow.times || []).filter((slot) => slot.date === selectedForecastDate);
+    return availableWindow.times || [];
   }, [availableWindow.times, horizon, selectedForecastDate]);
+  
+  useEffect(() => {
+    if (selectedForecastDate && availableWindow.start_timestamp) {
+      const selected = new Date(selectedForecastDate);
+      const start = new Date(availableWindow.start_timestamp);
+      // Strip time from both dates to get clean day difference
+      selected.setHours(0, 0, 0, 0);
+      start.setHours(0, 0, 0, 0);
+      const diffTime = selected.getTime() - start.getTime();
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      setIsBeyondThreeMonths(diffDays > 90);
+    } else {
+      setIsBeyondThreeMonths(false);
+    }
+  }, [selectedForecastDate, availableWindow.start_timestamp]);
 
   useEffect(() => {
     if (horizon !== 'hourly') {
@@ -204,7 +219,7 @@ export default function DemandForecast() {
     hasSignal,
     maxChartValue,
   } = useMemo(() => {
-    if (!forecastData) {
+    if (!forecastData || !forecastData.historical || !forecastData.predicted) {
       return {
         chartData: [],
         selectedPrediction: null,
@@ -296,12 +311,13 @@ export default function DemandForecast() {
   const modelMeta = forecastData?.meta;
   const zoneEstimatedAccuracy = modelMeta?.estimated_accuracy;
   const requestedWindow = forecastData?.requested_window;
-  const peakWindow = forecastData?.peak_window;
+  const peakWindow = forecastData?.peak_demand;
   const confidenceBand = modelMeta?.confidence_band;
   const isLowConfidence = confidenceBand === 'low' || (typeof zoneEstimatedAccuracy === 'number' && zoneEstimatedAccuracy < 55);
   const canPredict = Boolean(
     selectedZone &&
     selectedForecastDate &&
+    !isBeyondThreeMonths &&
     (horizon === 'daily' || selectedForecastTime)
   );
 
@@ -473,19 +489,14 @@ export default function DemandForecast() {
 
             <div>
               <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Forecast Date</label>
-              <select
+              <input
+                type="date"
                 value={selectedForecastDate}
                 onChange={(e) => setSelectedForecastDate(e.target.value)}
-                disabled={loading || windowLoading || !dateOptions.length}
-                className="block w-full px-4 py-3 border border-[#333] rounded-2xl text-white focus:outline-none focus:ring-2 focus:ring-orange-500 bg-[#111] font-medium shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
-              >
-                <option value="">{windowLoading ? 'Loading dates' : 'Choose a date'}</option>
-                {dateOptions.map((dateOption) => (
-                  <option key={dateOption.value} value={dateOption.value}>
-                    {dateOption.label}
-                  </option>
-                ))}
-              </select>
+                disabled={loading || windowLoading || !availableWindow.start_timestamp}
+                min={availableWindow.start_timestamp ? availableWindow.start_timestamp.split('T')[0] : ''}
+                className="block w-full px-4 py-[10px] border border-[#333] rounded-2xl text-white focus:outline-none focus:ring-2 focus:ring-orange-500 bg-[#111] font-medium shadow-sm disabled:opacity-60 disabled:cursor-not-allowed uppercase"
+              />
             </div>
 
             <div ref={timeDropdownRef}>
@@ -568,6 +579,12 @@ export default function DemandForecast() {
                 {loading ? 'Predicting...' : 'Predict'}
               </button>
             </div>
+            {isBeyondThreeMonths && (
+              <div className="md:col-span-2 xl:col-span-4 mt-2 rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-200 flex items-center gap-2">
+                <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                <span>For performance and accuracy, predictions beyond 3 months (90 days) are unsupported. Please select a closer date.</span>
+              </div>
+            )}
             </div>
           </div>
         </div>
@@ -673,15 +690,15 @@ export default function DemandForecast() {
 
           <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
             <div className="xl:col-span-8 space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5">
                 <MetricCard
-                  eyebrow="Selected Prediction"
+                  eyebrow="Selected Demand"
                   title={
                     requestedWindow?.timestamp
                       ? new Date(requestedWindow.timestamp).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
                       : (selectedPrediction?.fullLabel || 'Forecast window')
                   }
-                  value={requestedWindow?.predicted_demand ?? selectedPrediction?.predicted ?? 'N/A'}
+                  value={requestedWindow?.predicted ?? selectedPrediction?.predicted ?? 'N/A'}
                   subtitle={requestedWindow?.available === false
                     ? 'The selected window is outside the model-supported forecast range for this zone.'
                     : `Expected ${horizon === 'hourly' ? 'pickups per hour' : 'pickups per day'} for the selected forecast slot.`}
@@ -695,13 +712,33 @@ export default function DemandForecast() {
                 <MetricCard
                   eyebrow="Next Peak Window"
                   title={peakWindow?.timestamp ? new Date(peakWindow.timestamp).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : (overallPeakInfo?.tooltipLabel || 'Peak window unavailable')}
-                  value={peakWindow?.predicted_demand ?? overallPeakInfo?.val ?? 'N/A'}
+                  value={peakWindow?.value ?? overallPeakInfo?.val ?? 'N/A'}
                   subtitle="Highest expected demand inside the active forecast range."
                   accent
                 >
                   <div className="flex items-center gap-2 text-sm text-orange-50/95">
                     <Clock size={16} />
                     <span>Best time to reposition fleet</span>
+                  </div>
+                </MetricCard>
+                
+                <MetricCard
+                  eyebrow="Financial Projection"
+                  title="Est. Hourly Revenue"
+                  value={`$${(
+                    (forecastData?.predicted?.find(p => p.timestamp === (requestedWindow?.timestamp || selectedPrediction?.timestamp))?.projected_revenue) || 
+                    ((requestedWindow?.predicted ?? selectedPrediction?.predicted ?? 0) * 15)
+                  ).toLocaleString()}`}
+                  subtitle={
+                    (forecastData?.predicted?.find(p => p.timestamp === (requestedWindow?.timestamp || selectedPrediction?.timestamp))?.surge_multiplier > 1.0) 
+                    ? "Surge pricing active for this block." 
+                    : "Standard baserate volume."
+                  }
+                  accent
+                >
+                  <div className="flex items-center gap-2 text-sm text-green-300">
+                    <TrendingUp size={16} />
+                    <span>{(forecastData?.predicted?.find(p => p.timestamp === (requestedWindow?.timestamp || selectedPrediction?.timestamp))?.surge_multiplier || 1.0)}x Demand Multiplier</span>
                   </div>
                 </MetricCard>
 

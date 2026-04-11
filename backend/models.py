@@ -43,5 +43,15 @@ class Forecast(Base):
     id = Column(Integer, primary_key=True, index=True)
     location_id = Column(Integer, ForeignKey("zones.location_id"))
     horizon = Column(String) # e.g., "hourly", "daily"
+    cache_key = Column(String, index=True) # Cache key for deduplication
     generated_at = Column(TIMESTAMP, server_default=func.now())
     forecast_values = Column(JSONB)
+
+class HistoricalDemand(Base):
+    __tablename__ = "historical_demand"
+    __table_args__ = (UniqueConstraint('location_id', 'datetime', name='uq_location_datetime'),)
+
+    id = Column(Integer, primary_key=True, index=True)
+    location_id = Column(Integer, ForeignKey("zones.location_id"), index=True)
+    datetime = Column(TIMESTAMP, index=True)
+    pickup_count = Column(Integer)

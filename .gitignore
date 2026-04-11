@@ -5,6 +5,7 @@ __pycache__/
 
 # --- Data Files (DO NOT UPLOAD THESE) ---
 # We ignore the raw data because it is too large for GitHub
+datasets/
 model_service/data/raw/*.parquet
 model_service/data/raw/*.csv
 model_service/data/processed/

@@ -47,9 +47,18 @@ def get_zone_forecast(
     if not zone:
         raise HTTPException(status_code=404, detail="Zone not found")
 
+    # Build cache key based on location, horizon, date, and time
+    cache_key = f"{location_id}:{horizon}"
+    if requested_date:
+        cache_key += f":{requested_date}"
+    if requested_time:
+        cache_key += f":{requested_time}"
+    
+    # Look for existing forecast with same parameters
     forecast = db.query(models.Forecast).filter(
         models.Forecast.location_id == location_id,
-        models.Forecast.horizon == horizon
+        models.Forecast.horizon == horizon,
+        models.Forecast.cache_key == cache_key
     ).order_by(models.Forecast.generated_at.desc()).first()
     
     now = datetime.utcnow()
@@ -65,24 +74,15 @@ def get_zone_forecast(
         )
         model_name = meta.get("model_name")
         model_type = meta.get("model_type")
-        requested_window = (
-            forecast.forecast_values.get("requested_window", {})
-            if isinstance(forecast.forecast_values, dict)
-            else {}
-        )
-        requested_timestamp = requested_window.get("timestamp")
-        requested_matches = True
-        if requested_date:
-            expected_timestamp = (
-                f"{requested_date}T{requested_time}:00"
-                if horizon == "hourly" and requested_time
-                else f"{requested_date}T00:00:00"
-            )
-            requested_matches = requested_timestamp == expected_timestamp
+        
+        # Cache is fresh if:
+        # 1. Same model version
+        # 2. Not a fallback model
+        # 3. Age is within limits (1 hour for hourly, 24 hours for daily)
         if model_name == MODEL_NAME and model_type != "no_data_fallback":
-            if requested_matches and horizon == "hourly" and age <= timedelta(hours=24):
+            if horizon == "hourly" and age <= timedelta(hours=1):
                 is_fresh = True
-            elif requested_matches and horizon == "daily" and age <= timedelta(hours=48):
+            elif horizon == "daily" and age <= timedelta(hours=24):
                 is_fresh = True
             
     if not is_fresh:
@@ -98,6 +98,7 @@ def get_zone_forecast(
         new_forecast = models.Forecast(
             location_id=location_id,
             horizon=horizon,
+            cache_key=cache_key,
             generated_at=now,
             forecast_values=forecast_data
         )
@@ -106,4 +107,5 @@ def get_zone_forecast(
         db.refresh(new_forecast)
         forecast = new_forecast
 
-    return forecast
+    # Return the forecast data directly (it's already in the correct format)
+    return forecast.forecast_values

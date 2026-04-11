@@ -34,6 +34,14 @@ class UserProfile(BaseModel):
     role: str
     fleet_size: Optional[int] = None
 
+class UserProfileUpdate(BaseModel):
+    name: Optional[str] = Field(None, min_length=2)
+    fleet_size: Optional[int] = Field(None, gt=0)
+
+class ChangePassword(BaseModel):
+    current_password: str
+    new_password: str = Field(..., min_length=6)
+
 # --- Zone Schemas ---
 class ZoneBase(BaseModel):
     location_id: int
@@ -49,10 +57,19 @@ class CompanyZoneCreate(BaseModel):
 
 # --- Forecast Schemas ---
 class ForecastResponse(BaseModel):
-    location_id: int
-    horizon: str
-    generated_at: datetime
-    forecast_values: Dict[str, Any]
+    historical: list
+    predicted: list
+    meta: Dict[str, Any]
+    requested_window: Optional[Dict[str, Any]]
+    peak_demand: Optional[Dict[str, Any]]
+    average_demand: Optional[float]
 
     class Config:
         from_attributes = True
+
+# --- Recommendation Schemas ---
+class RecommendationItem(BaseModel):
+    location_id: int
+    zone_name: str
+    borough: str
+    forecasted_pickups: int

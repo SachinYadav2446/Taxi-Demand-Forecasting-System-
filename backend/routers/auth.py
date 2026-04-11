@@ -96,3 +96,44 @@ def get_me(current_user: dict = Depends(get_current_user)):
         "role": role,
         "fleet_size": getattr(user, "fleet_size", None),
     }
+
+@router.put("/me", response_model=schemas.UserProfile)
+def update_me(profile_update: schemas.UserProfileUpdate, db: Session = Depends(get_db), current_user: dict = Depends(get_current_user)):
+    user = current_user["user"]
+    role = current_user["role"]
+
+    if profile_update.name is not None:
+        user.name = profile_update.name
+
+    if role == "operator" and profile_update.fleet_size is not None:
+        user.fleet_size = profile_update.fleet_size
+
+    db.commit()
+    db.refresh(user)
+
+    return {
+        "id": user.id,
+        "name": user.name,
+        "email": user.email,
+        "role": role,
+        "fleet_size": getattr(user, "fleet_size", None),
+    }
+
+@router.post("/change-password")
+def change_password(
+    payload: schemas.ChangePassword,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
+):
+    user = current_user["user"]
+
+    if not verify_password(payload.current_password, user.password_hash):
+        raise HTTPException(status_code=400, detail="Current password is incorrect")
+
+    if len(payload.new_password) < 6:
+        raise HTTPException(status_code=400, detail="New password must be at least 6 characters")
+
+    user.password_hash = get_password_hash(payload.new_password)
+    db.commit()
+
+    return {"message": "Password updated successfully"}
