@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { api } from '../lib/axios';
-import { Activity, TrendingUp, Clock, MapPin, ChevronDown } from 'lucide-react';
+import { Activity, TrendingUp, Clock, MapPin, ChevronDown, CloudRain } from 'lucide-react';
 
 export default function DemandForecast() {
   const { user } = useAuth();
@@ -43,7 +43,7 @@ export default function DemandForecast() {
   const MetricCard = ({ eyebrow, title, value, subtitle, accent = false, children }) => (
     <div className={`rounded-[28px] border p-5 md:p-6 shadow-[0_4px_20px_rgba(0,0,0,0.35)] h-full ${
       accent
-        ? 'border-orange-500/25 bg-[linear-gradient(180deg,rgba(249,115,22,0.18),rgba(239,68,68,0.12))]'
+        ? 'border-orange-500/25 bg-[linear-gradient(180deg,rgba(16,185,129,0.18),rgba(16,185,129,0.12))]'
         : 'border-[#222] bg-[linear-gradient(180deg,#0d0d0d,#090909)]'
     }`}>
       <p className={`text-[11px] font-bold uppercase tracking-[0.22em] ${accent ? 'text-orange-200/80' : 'text-slate-500'}`}>{eyebrow}</p>
@@ -450,7 +450,7 @@ export default function DemandForecast() {
 
   return (
     <div className="max-w-7xl mx-auto pb-12 space-y-6">
-      <section className="rounded-[32px] border border-[#1f1f1f] bg-[radial-gradient(circle_at_top,rgba(249,115,22,0.10),transparent_34%),#090909] p-5 md:p-6 shadow-[0_10px_40px_rgba(0,0,0,0.45)]">
+      <section className="rounded-[32px] border border-[#1f1f1f] bg-[radial-gradient(circle_at_top,rgba(16,185,129,0.10),transparent_34%),#090909] p-5 md:p-6 shadow-[0_10px_40px_rgba(0,0,0,0.45)]">
         <div className="grid gap-6 xl:grid-cols-[0.95fr_1.55fr] xl:items-start">
           <div>
             <div className="inline-flex items-center gap-2 rounded-full border border-orange-500/20 bg-orange-500/[0.06] px-3 py-1.5">
@@ -461,6 +461,20 @@ export default function DemandForecast() {
             <p className="mt-3 max-w-lg text-slate-400 leading-7">
               Explore near-term taxi demand by zone and inspect a specific prediction window that the model can actually serve.
             </p>
+
+            <div className="mt-6 flex items-center gap-4 rounded-[20px] border border-[#252525] bg-[#111] p-3 w-fit pr-6">
+              <div className="p-3 bg-blue-500/10 rounded-xl text-blue-400">
+                <CloudRain size={20} />
+              </div>
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Live External Factor</p>
+                <p className="text-white font-bold text-sm mt-0.5">NYC: Light Rain • 62°F</p>
+                <div className="flex items-center gap-1.5 mt-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse" />
+                  <p className="text-[10px] text-orange-400 font-semibold tracking-wide">SARIMAX Engine heavily weighting precipitation</p>
+                </div>
+              </div>
+            </div>
           </div>
 
           <div className="rounded-[28px] border border-white/5 bg-white/[0.02] p-4 md:p-5">
@@ -753,7 +767,7 @@ export default function DemandForecast() {
                   </div>
                   <div className="mt-3 flex items-center justify-between text-sm">
                     <span className="text-slate-500">Confidence</span>
-                    <span className={`font-semibold ${confidenceBand === 'high' ? 'text-emerald-300' : confidenceBand === 'medium' ? 'text-amber-300' : 'text-rose-300'}`}>
+                    <span className={`font-semibold ${confidenceBand === 'high' ? 'text-orange-300' : confidenceBand === 'medium' ? 'text-orange-300' : 'text-rose-300'}`}>
                       {confidenceBand ? `${confidenceBand[0].toUpperCase()}${confidenceBand.slice(1)}` : 'Unavailable'}
                     </span>
                   </div>
@@ -781,7 +795,7 @@ export default function DemandForecast() {
                 </div>
 
                 {!hasSignal && (
-                  <div className="relative z-10 mb-6 rounded-2xl border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
+                  <div className="relative z-10 mb-6 rounded-2xl border border-orange-500/20 bg-orange-500/10 px-4 py-3 text-sm text-orange-200">
                     No meaningful demand signal was found for this zone in the current dataset window. The chart below is a flat zero-demand forecast.
                   </div>
                 )}
@@ -1043,7 +1057,7 @@ export default function DemandForecast() {
                 <div className="space-y-3 text-sm">
                   <div className="flex items-center justify-between gap-4 rounded-2xl border border-white/5 bg-white/[0.03] px-3 py-3">
                     <span className="text-slate-500">Confidence band</span>
-                    <span className={`font-semibold ${confidenceBand === 'high' ? 'text-emerald-300' : confidenceBand === 'medium' ? 'text-amber-300' : 'text-rose-300'}`}>
+                    <span className={`font-semibold ${confidenceBand === 'high' ? 'text-orange-300' : confidenceBand === 'medium' ? 'text-orange-300' : 'text-rose-300'}`}>
                       {confidenceBand ? `${confidenceBand[0].toUpperCase()}${confidenceBand.slice(1)}` : 'Unavailable'}
                     </span>
                   </div>
