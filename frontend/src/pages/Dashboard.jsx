@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useOutletContext } from 'react-router-dom';
+import { useOutletContext, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { api } from '../lib/axios';
-import { Building2, Mail, MapPin, ShieldCheck, UserRound, Users, Settings2, X, Loader2, AlertTriangle, Car } from 'lucide-react';
+import { Building2, Mail, MapPin, ShieldCheck, UserRound, Users, Settings2, X, Loader2, AlertTriangle, Car, Activity, Calendar, ChevronRight, TrendingUp, Zap } from 'lucide-react';
 import CityHeatmap from '../components/CityHeatmap';
 import FleetAllocation from '../components/FleetAllocation';
 import SmartDispatch from '../components/SmartDispatch';
@@ -33,65 +33,89 @@ function EditProfileModal({ user, onClose }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-      <div className="relative w-full max-w-md rounded-3xl border border-[#333] bg-[#0f0f0f] p-6 shadow-2xl">
-        <button 
-          onClick={onClose}
-          className="absolute right-4 top-4 text-slate-500 hover:text-white transition-colors"
-        >
-          <X size={20} />
-        </button>
-        
-        <h2 className="text-xl font-bold text-white mb-6">Edit Profile Settings</h2>
-        
-        {err && (
-          <div className="mb-4 bg-red-500/10 border border-red-500/50 text-red-500 rounded-lg p-3 text-sm font-medium">
-            {err}
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-xs font-bold uppercase tracking-widest text-slate-500 mb-2">Full Name</label>
-            <input 
-              type="text" 
-              value={name} 
-              onChange={e => setName(e.target.value)}
-              className="w-full bg-[#1a1a1a] border border-[#333] rounded-xl px-4 py-3 text-white focus:outline-none focus:border-orange-500 transition-colors"
-              required minLength={2}
-            />
-          </div>
-
-          {user?.role === 'operator' && (
-            <div>
-              <label className="block text-xs font-bold uppercase tracking-widest text-slate-500 mb-2">Fleet Size</label>
-              <input 
-                type="number" 
-                value={fleetSize} 
-                onChange={e => setFleetSize(e.target.value)}
-                className="w-full bg-[#1a1a1a] border border-[#333] rounded-xl px-4 py-3 text-white focus:outline-none focus:border-orange-500 transition-colors"
-                required min={1}
-              />
+    <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-[#000]/80 backdrop-blur-md" onClick={onClose} />
+      <div className="relative w-full max-w-md animate-in zoom-in-95 fade-in duration-300">
+        <div className="rounded-[32px] border border-[#222] bg-[#0a0a0a] overflow-hidden shadow-[0_20px_60px_rgba(0,0,0,0.8)]">
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-orange-500 to-transparent" />
+          
+          <div className="p-8">
+            <div className="flex items-center justify-between mb-8">
+              <div>
+                <p className="text-orange-500 text-[10px] font-black uppercase tracking-[0.2em] mb-1">Account Management</p>
+                <h3 className="text-2xl font-black text-white">Configure Profile</h3>
+              </div>
+              <button 
+                onClick={onClose}
+                className="w-10 h-10 rounded-xl bg-[#111] border border-[#222] flex items-center justify-center text-slate-500 hover:text-white hover:border-orange-500/50 transition-all"
+              >
+                <X size={20} />
+              </button>
             </div>
-          )}
 
-          <div className="pt-4 flex justify-end gap-3">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-5 py-2.5 rounded-xl border border-[#333] text-white font-bold hover:bg-[#222] transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={saving}
-              className="px-5 py-2.5 rounded-xl bg-orange-600 hover:bg-orange-500 text-white font-bold flex items-center justify-center min-w-[120px] transition-colors"
-            >
-              {saving ? <Loader2 className="animate-spin" size={20} /> : 'Save Changes'}
-            </button>
+            {err && (
+              <div className="mb-6 bg-red-500/10 border border-red-500/50 text-red-500 rounded-2xl p-4 text-sm font-bold flex items-center gap-3">
+                <AlertTriangle size={18} /> {err}
+              </div>
+            )}
+
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">Full Legal Name</label>
+                <div className="relative group">
+                   <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-500 group-focus-within:text-orange-500 transition-colors">
+                      <UserRound size={18} />
+                   </div>
+                   <input
+                    type="text"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    className="w-full bg-[#111] border border-[#222] rounded-2xl py-3.5 pl-11 pr-4 text-white font-bold focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500 transition-all"
+                    placeholder="Enter full name"
+                    required minLength={2}
+                  />
+                </div>
+              </div>
+
+              {user?.role === 'operator' && (
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">Fleet Capacity</label>
+                  <div className="relative group">
+                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-500 group-focus-within:text-orange-500 transition-colors">
+                        <Users size={18} />
+                    </div>
+                    <input
+                      type="number"
+                      value={fleetSize}
+                      onChange={(e) => setFleetSize(e.target.value)}
+                      className="w-full bg-[#111] border border-[#222] rounded-2xl py-3.5 pl-11 pr-4 text-white font-bold focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500 transition-all"
+                      placeholder="Number of vehicles"
+                      required min={1}
+                    />
+                  </div>
+                  <p className="text-[10px] text-slate-500 font-medium ml-1">Update your total deployable vehicle assets.</p>
+                </div>
+              )}
+
+              <div className="pt-4 flex gap-3">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="flex-1 py-4 rounded-2xl bg-[#111] border border-[#222] text-sm font-bold text-slate-400 hover:bg-[#151515] transition-all"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="flex-[2] py-4 rounded-2xl bg-orange-500 text-black text-sm font-black hover:bg-orange-400 disabled:opacity-50 shadow-[0_10px_20px_rgba(16,185,129,0.2)] transition-all flex items-center justify-center translate-y-0 hover:-translate-y-1 active:translate-y-0"
+                >
+                  {saving ? <Loader2 className="animate-spin" size={20} /> : 'Save Changes'}
+                </button>
+              </div>
+            </form>
           </div>
-        </form>
+        </div>
       </div>
     </div>
   );
@@ -100,20 +124,38 @@ function EditProfileModal({ user, onClose }) {
 
 export default function Dashboard() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [zones, setZones] = useState([]);
   const [trends, setTrends] = useState({ top_zones: [], bottom_zones: [] });
+  const [health, setHealth] = useState({ api: 'checking', model: 'checking' });
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [activeTab, setActiveTab] = useState('profile');
 
   const { setTheme, defaultAccent } = useOutletContext() || {};
+
+  useEffect(() => {
+    const checkHealth = async () => {
+      try {
+        await api.get('/');
+        setHealth({ api: 'online', model: 'online' });
+      } catch (err) {
+        setHealth({ api: 'offline', model: 'offline' });
+      }
+    };
+    
+    checkHealth();
+    const interval = setInterval(checkHealth, 30000); // Check every 30s
+    return () => clearInterval(interval);
+  }, []);
   
   useEffect(() => {
     if (!setTheme) return;
     const fallback = defaultAccent || 'orange';
-    if (activeTab === 'overview') setTheme('amber');
-    else if (activeTab === 'operations') setTheme('emerald');
-    else if (activeTab === 'analytics') setTheme('blue');
-    else setTheme(fallback);
+    if (activeTab === 'operations' || activeTab === 'analytics') {
+      setTheme('orange');
+    } else {
+      setTheme(fallback);
+    }
     
     return () => setTheme(fallback);
   }, [activeTab, setTheme, defaultAccent]);
@@ -157,17 +199,17 @@ export default function Dashboard() {
     {
       label: 'Account Type',
       value: user?.role === 'operator' ? 'Fleet Operator' : 'Driver',
-      icon: user?.role === 'operator' ? <Building2 size={18} className="text-amber-500" /> : <UserRound size={18} className="text-amber-500" />,
+      icon: user?.role === 'operator' ? <Building2 size={18} className="text-orange-500" /> : <UserRound size={18} className="text-orange-500" />,
     },
     {
       label: 'Email',
       value: user?.email || 'No email found',
-      icon: <Mail size={18} className="text-amber-500" />,
+      icon: <Mail size={18} className="text-orange-500" />,
     },
     {
       label: user?.role === 'operator' ? 'Fleet Size' : 'Available Zones',
       value: user?.role === 'operator' ? `${user?.fleet_size ?? 0} vehicles` : `${zones.length} zones`,
-      icon: user?.role === 'operator' ? <Users size={18} className="text-amber-500" /> : <MapPin size={18} className="text-amber-500" />,
+      icon: user?.role === 'operator' ? <Users size={18} className="text-orange-500" /> : <MapPin size={18} className="text-orange-500" />,
     },
   ];
 
@@ -179,7 +221,7 @@ export default function Dashboard() {
 
       {/* Tab Navigation Menu */}
       <div className="flex p-1 bg-[#151515] rounded-2xl border border-[#222] shadow-sm w-fit mx-auto mb-2">
-        {['profile', 'overview', 'operations', 'analytics'].map((tab) => (
+        {['profile', 'operations', 'analytics'].map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
@@ -195,189 +237,184 @@ export default function Dashboard() {
       </div>
 
       {activeTab === 'profile' && (
-        <div className="flex flex-col items-center justify-center py-12 md:py-20 px-4 animate-in fade-in slide-in-from-bottom-4 duration-700">
-          <div className="relative w-full max-w-2xl rounded-3xl border border-orange-500/20 bg-gradient-to-br from-[#1a0f05] via-[#050505] to-[#050505] overflow-hidden shadow-[0_0_80px_rgba(249,115,22,0.1)] p-1 justify-center z-10">
-            <div className="absolute top-0 right-0 w-full h-[120px] opacity-10 pointer-events-none" style={{ backgroundImage: "url('data:image/svg+xml,%3Csvg width=\\'20\\' height=\\'20\\' viewBox=\\'0 0 20 20\\' xmlns=\\'http://www.w3.org/2000/svg\\'%3E%3Cpath d=\\'M0 0h20v20H0V0zm10 17L3 10l7-7 7 7-7 7z\\' fill=\\'%23f97316\\' fill-opacity=\\'1\\' fill-rule=\\'evenodd\\'/%3E%3C/svg%3E')" }}></div>
-            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-orange-500 to-transparent"></div>
-            <div className="bg-[#0b0b0b] rounded-[26px] p-8 md:p-12 relative z-10">
-              <div className="flex flex-col md:flex-row items-center gap-8">
-                <div className="relative hidden sm:block">
-                   <div className="w-32 h-32 rounded-full bg-orange-500/10 border-2 border-orange-500/30 flex items-center justify-center relative shadow-[0_0_40px_rgba(249,115,22,0.3)] group hover:scale-105 transition-transform duration-300">
-                      <div className="absolute inset-0 rounded-full border-t border-orange-400 mix-blend-overlay animate-spin-slow" />
-                      <Car size={56} className="text-orange-500 drop-shadow-[0_0_15px_rgba(249,115,22,0.8)] group-hover:text-yellow-400 transition-colors" />
+        <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 space-y-6">
+          {/* Identity Hero Banner */}
+          <div className="relative overflow-hidden rounded-[32px] border border-[#222] bg-[#0a0a0a] p-8 shadow-2xl">
+             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-orange-500/50 to-transparent"></div>
+             <div className="absolute bottom-0 right-0 w-64 h-64 bg-orange-500/5 rounded-full blur-[100px] pointer-events-none" />
+             
+             <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-8">
+               <div className="flex flex-col md:flex-row items-center gap-6">
+                 {/* Precision Avatar */}
+                 <div className="relative">
+                   <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-orange-500/20 to-orange-500/5 border border-orange-500/30 flex items-center justify-center shadow-[0_0_30px_rgba(16,185,129,0.15)] group transition-all">
+                      <div className="text-3xl font-black text-orange-500 drop-shadow-[0_0_10px_rgba(16,185,129,0.3)]">
+                        {user?.name?.[0]?.toUpperCase() || 'D'}
+                      </div>
+                      <div className="absolute -bottom-2 -right-2 w-6 h-6 rounded-lg bg-orange-500 flex items-center justify-center border-2 border-[#0a0a0a] shadow-lg">
+                        <ShieldCheck size={12} className="text-black" />
+                      </div>
                    </div>
-                   <div className="absolute -bottom-2 -right-2 bg-orange-600 text-white text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full border-2 border-[#0b0b0b]">
-                     {user?.role === 'operator' ? 'Operator' : 'Driver'}
+                 </div>
+                 
+                 <div className="text-center md:text-left">
+                   <div className="flex items-center justify-center md:justify-start gap-2 mb-1">
+                     <h2 className="text-3xl font-extrabold text-white tracking-tight">{user?.name}</h2>
+                     <span className="px-2 py-0.5 rounded-md bg-orange-500/10 border border-orange-500/30 text-[10px] font-black text-orange-500 uppercase tracking-widest">
+                       {user?.role === 'operator' ? 'Enterprise' : 'Fleet Pro'}
+                     </span>
                    </div>
+                   <p className="text-slate-400 font-medium flex items-center justify-center md:justify-start gap-2">
+                     <Mail size={14} /> {user?.email}
+                   </p>
+                 </div>
+               </div>
+
+               <button 
+                 onClick={() => setIsEditingProfile(true)}
+                 className="px-6 py-2.5 rounded-xl border border-orange-500/30 bg-orange-500/5 text-orange-400 text-sm font-bold hover:bg-orange-500/10 hover:border-orange-500/50 transition-all flex items-center gap-2 group"
+               >
+                 <Settings2 size={16} className="group-hover:rotate-45 transition-transform" /> 
+                 Configure Account
+               </button>
+             </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Identity Details Card */}
+            <div className="rounded-3xl border border-[#222] bg-[#0a0a0a] p-6 flex flex-col">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="p-2 rounded-xl bg-orange-500/10 text-orange-500">
+                  <UserRound size={18} />
+                </div>
+                <h3 className="text-white font-bold text-lg">Identity Details</h3>
+              </div>
+              
+              <div className="space-y-4">
+                <div className="flex justify-between items-center py-3 border-b border-[#1a1a1a]">
+                  <span className="text-sm text-slate-500 font-medium">Borough Office</span>
+                  <span className="text-sm text-white font-bold">New York City</span>
+                </div>
+                <div className="flex justify-between items-center py-3 border-b border-[#1a1a1a]">
+                  <span className="text-sm text-slate-500 font-medium">Membership</span>
+                  <div className="flex items-center gap-2">
+                    <Calendar size={14} className="text-orange-500/50" />
+                    <span className="text-sm text-white font-bold">April 2026</span>
+                  </div>
+                </div>
+                <div className="flex justify-between items-center py-3">
+                  <span className="text-sm text-slate-500 font-medium">System Role</span>
+                  <span className="text-sm text-orange-500 font-bold capitalize">{user?.role}</span>
+                </div>
+              </div>
+              
+              <div className="mt-auto pt-6">
+                 <div className="rounded-2xl bg-orange-500/5 border border-orange-500/10 p-4">
+                    <p className="text-[10px] font-black text-orange-500 uppercase tracking-widest mb-1">Status Intelligence</p>
+                    <p className="text-xs text-slate-400 leading-relaxed">Your account is in excellent standing with full API access enabled.</p>
+                 </div>
+              </div>
+            </div>
+
+            {/* Intelligence Summary Row */}
+            <div className="lg:col-span-2 space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Fleet Health Widget */}
+                <div className="rounded-3xl border border-[#222] bg-[#0a0a0a] p-6 relative overflow-hidden group hover:border-orange-500/20 transition-all cursor-default">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="p-2 rounded-xl bg-orange-500/10 text-orange-500">
+                      {user?.role === 'operator' ? <Users size={20} /> : <MapPin size={20} />}
+                    </div>
+                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Global Reach</span>
+                  </div>
+                  <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest">{user?.role === 'operator' ? 'Fleet Capacity' : 'Available Zones'}</h3>
+                  <div className="flex items-end gap-2 mt-1">
+                    <span className="text-3xl font-black text-white">{user?.role === 'operator' ? user?.fleet_size : zones.length}</span>
+                    <span className="text-sm font-bold text-slate-500 mb-1">{user?.role === 'operator' ? 'Active Vehicles' : 'Zones Mapped'}</span>
+                  </div>
+                </div>
+
+                {/* System Intelligence Health Widget */}
+                <div className="rounded-3xl border border-[#222] bg-[#0a0a0a] p-6 relative overflow-hidden group hover:border-orange-500/20 transition-all cursor-default">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className={`p-2 rounded-xl ${health.api === 'online' ? 'bg-orange-500/10 text-orange-500' : 'bg-red-500/10 text-red-500'}`}>
+                      <Activity size={20} className={health.api === 'online' ? 'animate-pulse' : ''} />
+                    </div>
+                    <span className={`text-[10px] font-black uppercase tracking-widest ${health.api === 'online' ? 'text-orange-500' : 'text-red-500'}`}>
+                      {health.api === 'online' ? 'Operational' : 'Sync Error'}
+                    </span>
+                  </div>
+                  <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest">Intelligence Health</h3>
+                  <div className="flex items-end gap-2 mt-1">
+                    <span className="text-3xl font-black text-white">
+                      {health.api === 'online' 
+                        ? (user?.role === 'operator' 
+                            ? (user?.fleet_size >= 100 ? 'Tier 1' : user?.fleet_size >= 50 ? 'Tier 2' : 'Tier 3')
+                            : 'Tier 3')
+                        : 'Offline'}
+                    </span>
+                    <span className={`text-sm font-bold mb-1 flex items-center gap-1 ${health.api === 'online' ? 'text-orange-500' : 'text-red-500'}`}>
+                      {health.api === 'online' ? <ShieldCheck size={14} /> : <AlertTriangle size={14} />} 
+                      {health.api === 'online' ? 'Protected' : 'Connection Lost'}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-4 mt-4">
+                    <div className="flex items-center gap-1.5">
+                      <div className={`w-1.5 h-1.5 rounded-full ${health.api === 'online' ? 'bg-orange-500' : 'bg-red-500'}`} />
+                      <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">API: Live</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <div className={`w-1.5 h-1.5 rounded-full ${health.model === 'online' ? 'bg-orange-500' : 'bg-red-500'}`} />
+                      <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">SARIMAX: Active</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Utility Guide / Quick Actions */}
+              <div className="rounded-3xl border border-[#222] bg-[#0a0a0a] p-6 relative overflow-hidden">
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-white font-bold text-lg">Platform Navigation</h3>
+                  <div className="px-2 py-0.5 rounded-lg bg-[#111] border border-[#222] text-[10px] font-bold text-slate-500 uppercase">Quick Access</div>
                 </div>
                 
-                <div className="flex-1 text-center md:text-left">
-                  <div className="flex items-center justify-center md:justify-start gap-4 mb-2 sm:hidden">
-                    <Car size={32} className="text-orange-500" />
-                    <span className="bg-orange-600 text-white text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full border-2 border-[#0b0b0b]">{user?.role === 'operator' ? 'Operator' : 'Driver'}</span>
-                  </div>
-                  <h2 className="text-3xl font-extrabold text-white tracking-tight">{user?.name || 'Driver Unknown'}</h2>
-                  <p className="text-slate-400 mt-2 font-medium">{user?.email}</p>
-                  
-                  <div className="grid grid-cols-2 gap-4 mt-8">
-                    <div className="bg-[#111] p-4 rounded-xl border border-[#222]">
-                       <p className="text-xs uppercase tracking-widest text-slate-500 font-bold mb-1">Status</p>
-                       <p className="text-emerald-400 font-bold flex items-center gap-2 justify-center md:justify-start">
-                          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" /> Active Duty
-                       </p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <button
+                    onClick={() => navigate('/settings')}
+                    className="flex items-center justify-between p-4 rounded-2xl bg-[#111] border border-[#1f1f1f] hover:bg-[#151515] hover:border-orange-500/20 transition-all text-left">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-orange-500/10 flex items-center justify-center text-orange-500">
+                        <Settings2 size={16} />
+                      </div>
+                      <span className="text-white font-bold text-sm">Settings</span>
                     </div>
-                    <div className="bg-[#111] p-4 rounded-xl border border-[#222]">
-                       <p className="text-xs uppercase tracking-widest text-slate-500 font-bold mb-1">
-                         {user?.role === 'operator' ? 'Fleet Size' : 'Zones'}
-                       </p>
-                       <p className="text-white font-bold">
-                         {user?.role === 'operator' ? `${user?.fleet_size ?? 0} Vehicles` : `${zones.length} Active`}
-                       </p>
+                    <ChevronRight size={16} className="text-slate-600" />
+                  </button>
+                  <button
+                    onClick={() => navigate('/support')}
+                    className="flex items-center justify-between p-4 rounded-2xl bg-[#111] border border-[#1f1f1f] hover:bg-[#151515] hover:border-orange-500/20 transition-all text-left">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-orange-500/10 flex items-center justify-center text-orange-500">
+                        <Users size={16} />
+                      </div>
+                      <span className="text-white font-bold text-sm">Operator Support</span>
                     </div>
-                  </div>
-                  
-                  <button 
-                     onClick={() => setIsEditingProfile(true)}
-                     className="mt-6 w-full py-3 bg-orange-500/10 border border-orange-500/30 hover:bg-orange-500/20 text-orange-400 font-bold rounded-xl transition-all hover:scale-[1.02]"
-                  >
-                    Configure Profile
+                    <ChevronRight size={16} className="text-slate-600" />
                   </button>
                 </div>
               </div>
             </div>
           </div>
-          <p className="text-slate-500 mt-8 font-medium tracking-wide text-sm">Select a module above to enter the command center.</p>
-        </div>
-      )}
-
-      {activeTab === 'overview' && (
-      <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
-      <section className="relative overflow-hidden rounded-[32px] border border-[#222] bg-[linear-gradient(135deg,#111_0%,#0c0c0c_58%,#1c1108_100%)] p-6 md:p-8">
-        <div className="absolute top-0 right-0 w-[360px] h-[360px] bg-amber-500/10 rounded-full blur-[120px] pointer-events-none" />
-        <div className="relative z-10 grid grid-cols-1 xl:grid-cols-[1.15fr_0.85fr] gap-6">
-          <div>
-            <p className="text-amber-400 text-xs font-bold uppercase tracking-[0.3em] mb-3">Dashboard</p>
-            <div className="flex items-center gap-4">
-              <h1 className="text-3xl md:text-4xl font-extrabold text-white tracking-tight">
-                Welcome back, {user?.name}
-              </h1>
-              <button 
-                onClick={() => setIsEditingProfile(true)}
-                className="px-4 py-2 mt-1 rounded-full border border-amber-500/30 bg-amber-500/10 text-amber-400 text-sm font-bold hover:bg-amber-500/20 hover:border-amber-500/50 transition-colors flex items-center gap-2"
-              >
-                <Settings2 size={16} /> Edit Profile
-              </button>
-            </div>
-            <p className="text-slate-400 mt-3 max-w-2xl leading-relaxed">
-              This is your signed-in home. Review your account details, current zone coverage, and get ready to jump into demand forecasting or zone management.
+          
+          <div className="text-center pt-8 border-t border-[#1a1a1a]">
+            <p className="text-slate-500 font-medium tracking-wide text-xs">
+              This terminal is optimized for high-velocity operational decisions. Your session is securely encrypted.
             </p>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8">
-              {profileStats.map((item) => (
-                <div key={item.label} className="rounded-2xl border border-[#262626] bg-[#0d0d0d]/90 p-5">
-                  <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center mb-4">
-                    {item.icon}
-                  </div>
-                  <p className="text-xs font-bold uppercase tracking-widest text-slate-500">{item.label}</p>
-                  <p className="text-white font-bold text-lg mt-2 break-words">{item.value}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="rounded-[28px] border border-[#262626] bg-[#0b0b0b]/90 p-6">
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <p className="text-xs font-bold uppercase tracking-widest text-slate-500">Account Summary</p>
-                <h2 className="text-xl font-extrabold text-white mt-2">Signed-in overview</h2>
-              </div>
-              <div className="w-11 h-11 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center">
-                <ShieldCheck size={20} className="text-amber-500" />
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              <div className="rounded-2xl border border-[#1f1f1f] bg-[#111] p-4">
-                <p className="text-xs font-bold uppercase tracking-widest text-slate-500">Primary User</p>
-                <p className="text-white text-lg font-bold mt-2">{user?.name}</p>
-                <p className="text-slate-400 text-sm mt-1">{user?.email}</p>
-              </div>
-
-              <div className="rounded-2xl border border-[#1f1f1f] bg-[#111] p-4">
-                <p className="text-xs font-bold uppercase tracking-widest text-slate-500">Zone Coverage</p>
-                <p className="text-white text-3xl font-black mt-2">{zones.length}</p>
-                <p className="text-slate-400 text-sm mt-1">
-                  {user?.role === 'operator' ? 'Zones mapped to your fleet operations.' : 'Zones available for your demand exploration.'}
-                </p>
-              </div>
-
-              <div className="rounded-2xl border border-[#1f1f1f] bg-[#111] p-4">
-                <p className="text-xs font-bold uppercase tracking-widest text-slate-500">Quick Next Step</p>
-                <p className="text-white text-lg font-bold mt-2">
-                  {user?.role === 'operator' ? 'Manage zones or open forecasts' : 'Open demand forecast'}
-                </p>
-                <p className="text-slate-400 text-sm mt-1">
-                  Use the sidebar to move between your operational tools.
-                </p>
-              </div>
-            </div>
           </div>
         </div>
-      </section>
-
-      <section className="grid grid-cols-1 lg:grid-cols-[0.95fr_1.05fr] gap-6">
-        <div className="rounded-3xl border border-[#222] bg-[#0a0a0a] p-6">
-          <p className="text-amber-400 text-xs font-bold uppercase tracking-[0.3em] mb-3">Zone Snapshot</p>
-          <h2 className="text-2xl font-extrabold text-white">Your current zone visibility</h2>
-          <p className="text-slate-400 mt-3 leading-relaxed">
-            {user?.role === 'operator'
-              ? 'These are the zones currently tied to your fleet account. Update them anytime from Zone Management.'
-              : 'These are sample zones you can inspect in the demand forecast workspace.'}
-          </p>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6">
-            {zonePreview.length > 0 ? zonePreview.map((zone) => (
-              <div key={zone.location_id} className="rounded-2xl border border-[#252525] bg-[#111] p-4">
-                <p className="text-white font-bold">{zone.zone_name}</p>
-                <p className="text-slate-400 text-sm mt-1">{zone.borough}</p>
-                <p className="text-slate-500 text-xs font-semibold uppercase tracking-widest mt-3">
-                  Zone {zone.location_id}
-                </p>
-              </div>
-            )) : (
-              <div className="sm:col-span-2 rounded-2xl border border-[#252525] bg-[#111] p-6 text-center">
-                <p className="text-white font-bold">No zones available yet</p>
-                <p className="text-slate-400 text-sm mt-2">
-                  {user?.role === 'operator'
-                    ? 'Map your zones from Zone Management to start building your dashboard context.'
-                    : 'Zone data will appear here once available.'}
-                </p>
-              </div>
-            )}
-          </div>
-        </div>
-
-        <div className="rounded-3xl border border-[#222] bg-[#0a0a0a] p-6">
-          <p className="text-amber-400 text-xs font-bold uppercase tracking-[0.3em] mb-3">Workspace Guide</p>
-          <h2 className="text-2xl font-extrabold text-white">How your app is now organized</h2>
-          <div className="space-y-4 mt-6">
-            <div className="rounded-2xl border border-[#252525] bg-[#111] p-4">
-              <p className="text-white font-bold">Dashboard</p>
-              <p className="text-slate-400 text-sm mt-2">Your signed-in home with account details, zone coverage, and quick context.</p>
-            </div>
-            <div className="rounded-2xl border border-[#252525] bg-[#111] p-4">
-              <p className="text-white font-bold">Zone Management</p>
-              <p className="text-slate-400 text-sm mt-2">Operator-only workspace for selecting and saving operating zones.</p>
-            </div>
-            <div className="rounded-2xl border border-[#252525] bg-[#111] p-4">
-              <p className="text-white font-bold">Demand Forecast</p>
-              <p className="text-slate-400 text-sm mt-2">Dedicated forecasting area with zone selection, peak windows, and the chart view.</p>
-            </div>
-          </div>
-        </div>
-      </section>
-      </div>
       )}
+
+
 
       {activeTab === 'operations' && (
       <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
@@ -391,8 +428,8 @@ export default function Dashboard() {
       {/* Mount operational algorithm only for Company/Operators who actually own fleet sizes */}
       {user?.role === 'operator' && (
         <section className="rounded-3xl border border-[#222] bg-[#0a0a0a] overflow-hidden p-6 relative shadow-2xl">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full blur-[50px] pointer-events-none" />
-          <p className="text-emerald-400 text-xs font-bold uppercase tracking-[0.3em] mb-4">Fleet Operations</p>
+          <div className="absolute top-0 right-0 w-32 h-32 bg-orange-500/5 rounded-full blur-[50px] pointer-events-none" />
+          <p className="text-orange-400 text-xs font-bold uppercase tracking-[0.3em] mb-4">Fleet Operations</p>
           <FleetAllocation fleetSize={user.fleet_size} hotspots={trends.top_zones} />
         </section>
       )}
@@ -404,8 +441,8 @@ export default function Dashboard() {
       {/* Trends Section */}
       <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="rounded-3xl border border-[#222] bg-[#0a0a0a] p-6 relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 rounded-full blur-[50px] pointer-events-none" />
-          <p className="text-blue-400 text-xs font-bold uppercase tracking-[0.3em] mb-3">Surging Demand</p>
+          <div className="absolute top-0 right-0 w-32 h-32 bg-orange-500/5 rounded-full blur-[50px] pointer-events-none" />
+          <p className="text-orange-400 text-xs font-bold uppercase tracking-[0.3em] mb-3">Surging Demand</p>
           <h2 className="text-2xl font-extrabold text-white">Top 5 Hotspots (Past 7 Days)</h2>
           <p className="text-slate-400 mt-2 text-sm leading-relaxed mb-6">
             City-wide zones with the highest volume of pickups. Use this to position fleets dynamically for maximum revenue.
@@ -418,7 +455,7 @@ export default function Dashboard() {
                   <p className="text-slate-400 text-sm">{tz.borough}</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-blue-400 font-bold">{tz.pickups.toLocaleString()} rides</p>
+                  <p className="text-orange-400 font-bold">{tz.pickups.toLocaleString()} rides</p>
                 </div>
               </div>
             ))}
@@ -428,8 +465,8 @@ export default function Dashboard() {
         </div>
 
         <div className="rounded-3xl border border-[#222] bg-[#0a0a0a] p-6 relative overflow-hidden">
-          <div className="absolute bottom-0 right-0 w-32 h-32 bg-blue-500/5 rounded-full blur-[50px] pointer-events-none" />
-          <p className="text-blue-400 text-xs font-bold uppercase tracking-[0.3em] mb-3">Idle Areas</p>
+          <div className="absolute bottom-0 right-0 w-32 h-32 bg-orange-500/5 rounded-full blur-[50px] pointer-events-none" />
+          <p className="text-orange-400 text-xs font-bold uppercase tracking-[0.3em] mb-3">Idle Areas</p>
           <h2 className="text-2xl font-extrabold text-white">Lowest Traffic (Past 7 Days)</h2>
           <p className="text-slate-400 mt-2 text-sm leading-relaxed mb-6">
             Zones suffering from coverage gaps or naturally dead demand. Instruct fleets to keep moving if idle here.
@@ -442,7 +479,7 @@ export default function Dashboard() {
                   <p className="text-slate-400 text-sm">{bz.borough}</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-blue-400 font-bold">{bz.pickups.toLocaleString()} rides</p>
+                  <p className="text-orange-400 font-bold">{bz.pickups.toLocaleString()} rides</p>
                 </div>
               </div>
             ))}
@@ -454,10 +491,10 @@ export default function Dashboard() {
       {/* Interactive Zone Map */}
       <section className="rounded-3xl border border-[#222] bg-[#0a0a0a] p-6 md:p-8">
         <div className="mb-6">
-          <p className="text-blue-400 text-xs font-bold uppercase tracking-[0.3em] mb-3">Geographic Intelligence</p>
+          <p className="text-orange-400 text-xs font-bold uppercase tracking-[0.3em] mb-3">Geographic Intelligence</p>
           <h2 className="text-2xl md:text-3xl font-extrabold text-white">Live Zone Map</h2>
           <p className="text-slate-400 mt-3 text-sm max-w-2xl leading-relaxed">
-            Interactive map of all NYC taxi zones. Circle size and color reflect demand volume — hover over zones for details. Red = very high demand, Blue = low demand.
+            Interactive map of all NYC taxi zones. Circle size and color reflect demand volume — hover over zones for details. Red = very high demand, Gold = low demand.
           </p>
         </div>
         <ZoneMap />
@@ -466,7 +503,7 @@ export default function Dashboard() {
       {/* Global Heatmap Section */}
       <section className="rounded-3xl border border-[#222] bg-[#0a0a0a] p-6 md:p-8">
         <div className="mb-8">
-          <p className="text-blue-400 text-xs font-bold uppercase tracking-[0.3em] mb-3">Global Macro Tracking</p>
+          <p className="text-orange-400 text-xs font-bold uppercase tracking-[0.3em] mb-3">Global Macro Tracking</p>
           <h2 className="text-2xl md:text-3xl font-extrabold text-white">City Demand Heatmap</h2>
           <p className="text-slate-400 mt-3 text-sm max-w-2xl leading-relaxed">
             A proportional geographic footprint of every New York City zone simultaneously. Larger, brighter blocks represent zones dictating the absolute highest physical traffic gravity over the last 7 days.
