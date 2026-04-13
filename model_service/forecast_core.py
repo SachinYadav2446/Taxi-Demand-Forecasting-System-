@@ -62,7 +62,7 @@ def generate_synthetic_data(location_id: int) -> pd.DataFrame:
     np.random.seed(location_id)
     
     # Generate 60 days of hourly data for better training
-    dates = pd.date_range(end=datetime.now(), periods=1440, freq='H')
+    dates = pd.date_range(end=datetime.now(), periods=1440, freq='h')
     
     # Base demand varies by location
     base_demand = 40 + (location_id % 10) * 5
@@ -115,7 +115,7 @@ def prepare_time_series(df: pd.DataFrame) -> pd.Series:
     df = df.set_index('datetime')
     
     # Resample to hourly definitively assigning zero to hours with zero discrete trips
-    ts = df['pickup_count'].resample('H').sum().fillna(0)
+    ts = df['pickup_count'].resample('h').sum().fillna(0)
     return ts
 
 
@@ -153,10 +153,10 @@ def generate_forecast(
     # Determine base periods
     if horizon == "daily":
         base_periods = 7  # 7 days ahead
-        freq = 'D'
+        freq = 'd'
     else:
         base_periods = 24  # 24 hours ahead
-        freq = 'H'
+        freq = 'h'
         
     periods = base_periods
     

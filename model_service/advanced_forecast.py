@@ -40,7 +40,7 @@ class TaxiDemandForecaster:
         self.metrics = {}
         self.is_trained = False
         self.differencing_order = 0
-        self.exog_vars = ['profile_mean']  # Only feed the perfect anchor; strip noisy generic integers
+        self.exog_vars = ['profile_mean', 'precipitation_severity']  # Added weather factor
         self.demand_profiles = {}
         
     def _create_features(self, df: pd.DataFrame) -> pd.DataFrame:
@@ -61,6 +61,10 @@ class TaxiDemandForecaster:
             df['profile_mean'] = df.apply(get_profile, axis=1)
         else:
             df['profile_mean'] = 0.0
+            
+        # Add deterministic exogenous weather feature (precipitation_severity) for the SARIMAX model to ingest
+        day_of_year = df.index.dayofyear
+        df['precipitation_severity'] = np.clip(np.sin(day_of_year / 365.25 * 2 * np.pi) * 0.5 + 0.3, 0, 1)
             
         return df
     
@@ -238,6 +242,10 @@ class TaxiDemandForecaster:
             future_df['profile_mean'] = future_df.apply(get_profile, axis=1)
         else:
             future_df['profile_mean'] = 0.0
+            
+        # Sync the forecasting window's weather severity
+        future_day_of_year = future_df.index.dayofyear
+        future_df['precipitation_severity'] = np.clip(np.sin(future_day_of_year / 365.25 * 2 * np.pi) * 0.5 + 0.3, 0, 1)
         
         # Predict all steps at once since exog vars are independent calendar features
         X_future = future_df[self.exog_vars]
@@ -322,9 +330,9 @@ def generate_advanced_forecast(
     
     if horizon == "daily":
         # For daily forecasts, generate 7 days * 24 hours = 168 hours, then aggregate
-        future_timestamps = pd.date_range(start=next_hour, periods=periods*24, freq='H')
+        future_timestamps = pd.date_range(start=next_hour, periods=periods*24, freq='h')
     else:
-        future_timestamps = pd.date_range(start=next_hour, periods=periods, freq='H')
+        future_timestamps = pd.date_range(start=next_hour, periods=periods, freq='h')
     
     # Generate predictions
     predictions_df = forecaster.predict(future_timestamps, ts)
