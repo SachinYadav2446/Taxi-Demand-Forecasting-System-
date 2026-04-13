@@ -48,6 +48,8 @@ class ZoneBase(BaseModel):
     borough: str
     zone_name: str
     service_zone: str
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
 
     class Config:
         from_attributes = True

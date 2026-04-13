@@ -71,7 +71,7 @@ export default function SmartDispatch() {
   return (
     <div className="rounded-[32px] border border-[#1f1f1f] bg-[radial-gradient(ellipse_at_top,rgba(16,185,129,0.08),transparent_50%),#090909] p-6 shadow-[0_10px_40px_rgba(0,0,0,0.45)]">
       <div className="flex items-center gap-3 mb-6">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-400">
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-500/10 text-orange-400">
           <Zap size={20} className="drop-shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
         </div>
         <div>
@@ -84,7 +84,7 @@ export default function SmartDispatch() {
         <div ref={dropdownRef} className="relative">
            <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">Your Current Zone</label>
            <div className="relative">
-             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-emerald-500">
+             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-orange-500">
                <Search size={16} />
              </div>
              <input
@@ -97,7 +97,7 @@ export default function SmartDispatch() {
                }}
                onFocus={() => setIsDropdownOpen(true)}
                placeholder="Search zones..."
-               className="block w-full pl-10 pr-4 py-3 border border-[#333] rounded-2xl text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-[#111] font-medium placeholder:text-slate-600"
+               className="block w-full pl-10 pr-4 py-3 border border-[#333] rounded-2xl text-white focus:outline-none focus:ring-2 focus:ring-orange-500 bg-[#111] font-medium placeholder:text-slate-600"
              />
            </div>
 
@@ -107,7 +107,7 @@ export default function SmartDispatch() {
                  <button
                    key={z.location_id}
                    onClick={() => handleZoneSelect(z)}
-                   className="w-full text-left px-4 py-3 hover:bg-emerald-500/10 transition-colors flex justify-between items-center border-b border-[#1a1a1a] last:border-0 cursor-pointer"
+                   className="w-full text-left px-4 py-3 hover:bg-orange-500/10 transition-colors flex justify-between items-center border-b border-[#1a1a1a] last:border-0 cursor-pointer"
                  >
                    <span className="text-white font-medium text-sm">{z.zone_name}</span>
                    <span className="text-slate-500 text-xs">{z.borough}</span>
@@ -121,7 +121,7 @@ export default function SmartDispatch() {
         <button
           onClick={fetchRecommendations}
           disabled={!selectedZone || loading}
-          className="h-[48px] px-6 rounded-2xl border border-emerald-500/30 bg-gradient-to-r from-emerald-600 to-emerald-500 text-sm font-semibold text-white shadow-[0_10px_25px_rgba(16,185,129,0.2)] hover:brightness-110 disabled:opacity-50 transition-all flex items-center justify-center gap-2"
+          className="h-[48px] px-6 rounded-2xl border border-orange-500/30 bg-gradient-to-r from-orange-600 to-orange-500 text-sm font-semibold text-white shadow-[0_10px_25px_rgba(16,185,129,0.2)] hover:brightness-110 disabled:opacity-50 transition-all flex items-center justify-center gap-2"
         >
           {loading ? (
              <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -147,10 +147,10 @@ export default function SmartDispatch() {
 
       {recommendations.length > 0 && (
         <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-500">
-          <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-emerald-400">🔥 Top 3 Nearby Hotspots</p>
+          <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-orange-400">🔥 Top 3 Nearby Hotspots</p>
           <div className="grid gap-4 md:grid-cols-3">
             {recommendations.map((rec, index) => (
-              <div key={rec.location_id} className={`rounded-2xl border p-5 transition-all ${index === 0 ? 'border-emerald-500/40 bg-gradient-to-br from-emerald-500/10 to-transparent shadow-[0_0_20px_rgba(16,185,129,0.1)]' : 'border-[#222] bg-[#0c0c0c]'}`}>
+              <div key={rec.location_id} className={`rounded-2xl border p-5 transition-all ${index === 0 ? 'border-orange-500/40 bg-gradient-to-br from-orange-500/10 to-transparent shadow-[0_0_20px_rgba(16,185,129,0.1)]' : 'border-[#222] bg-[#0c0c0c]'}`}>
                 <div className="flex items-center justify-between mb-3">
                    <div className="flex items-center justify-center w-6 h-6 rounded-full bg-black border border-[#333] text-xs font-bold text-slate-300">
                      #{index + 1}
@@ -161,7 +161,7 @@ export default function SmartDispatch() {
                 
                 <div className="flex items-center justify-between mt-auto">
                    <span className="text-sm text-slate-400">Next Hour</span>
-                   <div className="flex items-center gap-1.5 text-emerald-400">
+                   <div className="flex items-center gap-1.5 text-orange-400">
                      <TrendingUp size={16} />
                      <span className="font-black text-lg">{rec.forecasted_pickups}</span>
                    </div>

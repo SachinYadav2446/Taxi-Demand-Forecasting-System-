@@ -1,5 +1,12 @@
 @import "tailwindcss";
 
+@theme {
+  --color-maroon-100: #fdeef3;
+  --color-maroon-400: #8e2b4b;
+  --color-maroon-500: #6e1a37;
+  --color-maroon-600: #521329;
+}
+
 body {
   margin: 0;
   font-family: 'Sora', system-ui, Avenir, Helvetica, Arial, sans-serif;
@@ -199,8 +206,8 @@ body { background-color: #080808; }
 [data-mode="light"] .text-orange-400,
 [data-mode="light"] .text-orange-500 { color: #c2410c !important; }
 [data-mode="light"] .text-orange-600 { color: #9a3412 !important; }
-[data-mode="light"] .text-emerald-400,
-[data-mode="light"] .text-emerald-500 { color: #047857 !important; }
+[data-mode="light"] .text-orange-400,
+[data-mode="light"] .text-orange-500 { color: #047857 !important; }
 [data-mode="light"] .text-cyan-400,
 [data-mode="light"] .text-cyan-500 { color: #0e7490 !important; }
 [data-mode="light"] .text-blue-400,
@@ -216,8 +223,8 @@ body { background-color: #080808; }
 /* Accent backgrounds → subtle warm tint */
 [data-mode="light"] .bg-orange-500\/10 { background-color: rgba(249,115,22,0.1) !important; }
 [data-mode="light"] .bg-orange-600\/5 { background-color: rgba(249,115,22,0.06) !important; }
-[data-mode="light"] .bg-emerald-500\/10 { background-color: rgba(16,185,129,0.1) !important; }
-[data-mode="light"] .bg-emerald-600\/5 { background-color: rgba(16,185,129,0.06) !important; }
+[data-mode="light"] .bg-orange-500\/10 { background-color: rgba(16,185,129,0.1) !important; }
+[data-mode="light"] .bg-orange-600\/5 { background-color: rgba(16,185,129,0.06) !important; }
 [data-mode="light"] .bg-blue-500\/10 { background-color: rgba(59,130,246,0.1) !important; }
 [data-mode="light"] .bg-blue-600\/5 { background-color: rgba(59,130,246,0.06) !important; }
 [data-mode="light"] .bg-amber-500\/10 { background-color: rgba(245,158,11,0.1) !important; }

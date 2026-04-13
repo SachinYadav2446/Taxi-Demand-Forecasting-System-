@@ -2,6 +2,7 @@
 .venv/
 __pycache__/
 *.pyc
+.env
 
 # --- Data Files (DO NOT UPLOAD THESE) ---
 # We ignore the raw data because it is too large for GitHub
@@ -21,3 +22,12 @@ model_service/data/processed/
 frontend/dist/
 frontend/node_modules/
 frontend/.vite/
+
+# --- Local Databases & Cache ---
+*.db
+tmp/
+model_cache/
+
+# --- Development Scratch Files ---
+*scratch_*
+backend/scripts/test_*

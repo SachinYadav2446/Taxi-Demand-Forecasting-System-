@@ -166,7 +166,7 @@ export default function Register() {
             <button
               type="submit"
               disabled={loading}
-              className="group w-full flex items-center justify-center gap-2 py-3.5 px-4 mt-6 border border-transparent rounded-xl text-sm font-bold text-slate-900 bg-orange-500 hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-[#0a0a0a] focus:ring-orange-500 transition-all duration-200 shadow-[0_0_15px_rgba(249,115,22,0.3)] hover:shadow-[0_0_25px_rgba(249,115,22,0.5)] disabled:opacity-70 disabled:cursor-not-allowed uppercase tracking-wider"
+              className="group w-full flex items-center justify-center gap-2 py-3.5 px-4 mt-6 border border-transparent rounded-xl text-sm font-bold text-slate-900 bg-orange-500 hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-[#0a0a0a] focus:ring-orange-500 transition-all duration-200 shadow-[0_0_15px_rgba(16,185,129,0.3)] hover:shadow-[0_0_25px_rgba(16,185,129,0.5)] disabled:opacity-70 disabled:cursor-not-allowed uppercase tracking-wider"
             >
               {loading ? 'Creating account...' : 'Create Account'}
               {!loading && <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />}

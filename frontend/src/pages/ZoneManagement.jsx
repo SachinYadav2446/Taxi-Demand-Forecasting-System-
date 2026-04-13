@@ -102,7 +102,7 @@ export default function ZoneManagement() {
           <button
             onClick={handleSave}
             disabled={saving}
-            className="flex justify-center items-center gap-2 px-6 py-3 sm:py-2.5 bg-orange-600 hover:bg-orange-700 text-white text-sm font-semibold rounded-xl shadow-[0_0_15px_rgba(234,88,12,0.3)] hover:shadow-[0_0_20px_rgba(234,88,12,0.5)] transition-all disabled:opacity-70"
+            className="flex justify-center items-center gap-2 px-6 py-3 sm:py-2.5 bg-orange-600 hover:bg-orange-700 text-white text-sm font-semibold rounded-xl shadow-[0_0_15px_rgba(5,150,105,0.3)] hover:shadow-[0_0_20px_rgba(5,150,105,0.5)] transition-all disabled:opacity-70"
           >
             {saving ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div> : <Save size={16} />}
             Save Changes
@@ -141,7 +141,7 @@ export default function ZoneManagement() {
                     onClick={() => toggleZone(zone.location_id)}
                     className={`w-full text-left px-4 py-3 rounded-xl transition-all border flex items-center justify-between group ${
                       isSelected 
-                        ? 'bg-orange-500/10 border-orange-500/30 text-orange-400 shadow-[inset_0_0_10px_rgba(249,115,22,0.1)]' 
+                        ? 'bg-orange-500/10 border-orange-500/30 text-orange-400 shadow-[inset_0_0_10px_rgba(16,185,129,0.1)]' 
                         : 'bg-[#111] border-transparent hover:bg-[#151515] text-slate-400 hover:text-slate-300 hover:border-[#333]'
                     }`}
                   >
@@ -152,7 +152,7 @@ export default function ZoneManagement() {
                       <span className="text-xs text-slate-500 font-medium">Zone {zone.location_id}</span>
                     </div>
                     {isSelected ? (
-                      <div className="bg-orange-500 text-slate-900 rounded-full p-1 shadow-[0_0_10px_rgba(249,115,22,0.5)]">
+                      <div className="bg-orange-500 text-slate-900 rounded-full p-1 shadow-[0_0_10px_rgba(16,185,129,0.5)]">
                         <Check size={12} strokeWidth={3} />
                       </div>
                     ) : (

@@ -117,21 +117,31 @@ def get_heatmap_data(db: Session = Depends(get_db)):
         
     seven_days_ago = max_date - timedelta(days=7)
     
-    # Query all active zones
     query = text("""
-        SELECT z.location_id, z.zone_name, z.borough, SUM(h.pickup_count) as value
+        SELECT z.location_id, z.zone_name, z.borough, z.latitude, z.longitude, SUM(h.pickup_count) as value
         FROM historical_demand h
         JOIN zones z ON h.location_id = z.location_id
         WHERE h.datetime >= :start_date
-        GROUP BY z.location_id, z.zone_name, z.borough
+        GROUP BY z.location_id, z.zone_name, z.borough, z.latitude, z.longitude
         ORDER BY value DESC
     """)
     
     results = db.execute(query, {"start_date": seven_days_ago}).fetchall()
     
+    # Exclude known "water" or "non-land" zones that confuse users (2: Jamaica Bay, 103: Governor's Island, etc.)
+    # Also exclude 264 (N/A) and 265 (Outside NYC)
+    EXCLUDED_ZONES = {2, 103, 104, 105, 264, 265}
+    
     heatmap_data = [
-        {"location_id": r.location_id, "name": r.zone_name, "borough": r.borough, "value": int(r.value)} 
-        for r in results if r.value > 0
+        {
+            "location_id": r.location_id, 
+            "name": r.zone_name, 
+            "borough": r.borough, 
+            "value": int(r.value),
+            "latitude": r.latitude,
+            "longitude": r.longitude
+        } 
+        for r in results if r.value > 0 and r.location_id not in EXCLUDED_ZONES
     ]
     
     return heatmap_data

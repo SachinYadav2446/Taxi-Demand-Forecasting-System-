@@ -112,7 +112,7 @@ export default function Landing() {
         <div>
           <Link
             to="/login"
-            className="inline-flex items-center gap-2 rounded-full border border-orange-500/30 bg-orange-500/10 px-5 py-2.5 text-sm font-bold text-orange-300 shadow-[0_0_20px_rgba(249,115,22,0.12)] transition-all hover:border-white/70 hover:bg-white hover:text-slate-950 hover:shadow-[0_0_28px_rgba(255,255,255,0.22)]"
+            className="inline-flex items-center gap-2 rounded-full border border-orange-500/30 bg-orange-500/10 px-5 py-2.5 text-sm font-bold text-orange-300 shadow-[0_0_20px_rgba(16,185,129,0.12)] transition-all hover:border-white/70 hover:bg-white hover:text-slate-950 hover:shadow-[0_0_28px_rgba(255,255,255,0.22)]"
           >
             <span className="w-2 h-2 rounded-full bg-current opacity-80" />
             {user ? 'Go to Dashboard' : 'Sign in'}
@@ -146,7 +146,7 @@ export default function Landing() {
                 <div className="flex flex-col sm:flex-row gap-4 pt-4">
                   <Link
                     to="/dashboard"
-                    className="w-full sm:w-auto text-center px-8 py-4 bg-orange-500 hover:bg-orange-600 text-slate-900 font-bold rounded-lg shadow-[0_0_20px_rgba(249,115,22,0.3)] hover:shadow-[0_0_30px_rgba(249,115,22,0.5)] transition-all uppercase text-sm tracking-wider"
+                    className="w-full sm:w-auto text-center px-8 py-4 bg-orange-500 hover:bg-orange-600 text-slate-900 font-bold rounded-lg shadow-[0_0_20px_rgba(16,185,129,0.3)] hover:shadow-[0_0_30px_rgba(16,185,129,0.5)] transition-all uppercase text-sm tracking-wider"
                   >
                     Open Dashboard
                   </Link>
@@ -165,7 +165,7 @@ export default function Landing() {
                 <div className="flex flex-col sm:flex-row gap-4 pt-4">
                   <Link
                     to="/register?role=operator"
-                    className="w-full sm:w-auto text-center px-8 py-4 bg-orange-500 hover:bg-orange-600 text-slate-900 font-bold rounded-lg shadow-[0_0_20px_rgba(249,115,22,0.3)] hover:shadow-[0_0_30px_rgba(249,115,22,0.5)] transition-all uppercase text-sm tracking-wider"
+                    className="w-full sm:w-auto text-center px-8 py-4 bg-orange-500 hover:bg-orange-600 text-slate-900 font-bold rounded-lg shadow-[0_0_20px_rgba(16,185,129,0.3)] hover:shadow-[0_0_30px_rgba(16,185,129,0.5)] transition-all uppercase text-sm tracking-wider"
                   >
                     Register as Fleet Operator
                   </Link>

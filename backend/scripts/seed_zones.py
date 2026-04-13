@@ -9,31 +9,61 @@ from sqlalchemy.orm import Session
 from database import SessionLocal
 import models
 
-def seed_zones(csv_path: str):
+def seed_zones(csv_path: str, centroids_path: str = None):
     db: Session = SessionLocal()
     try:
         # Check if zones already exist to avoid duplicates
         existing = db.query(models.Zone).count()
         if existing > 0:
-            print(f"Database already has {existing} zones. Skipping seed.")
-            return
+            print(f"Processing {existing} existing zones for coordinate updates...")
+            # We will update instead of delete/insert to avoid FK constraint issues
+            update_mode = True
+        else:
+            print("Seeding new zones from CSV...")
+            update_mode = False
 
-        print("Seeding zones from CSV...")
+        # Load centroids if available
+        centroids = {}
+        if centroids_path and os.path.exists(centroids_path):
+            print(f"Loading centroids from {centroids_path}...")
+            with open(centroids_path, 'r', encoding='utf-8') as f:
+                reader = csv.DictReader(f)
+                for row in reader:
+                    # File format: LocationID,X,Y,zone,borough
+                    centroids[int(row['LocationID'])] = {
+                        'lat': float(row['Y']),
+                        'lon': float(row['X'])
+                    }
+
+        print("Processing zones from CSV...")
         with open(csv_path, 'r', encoding='utf-8') as f:
             reader = csv.DictReader(f)
             zones_to_insert = []
             for row in reader:
-                zone = models.Zone(
-                    location_id=int(row['LocationID']),
-                    borough=row['Borough'],
-                    zone_name=row['Zone'],
-                    service_zone=row['service_zone']
-                )
-                zones_to_insert.append(zone)
+                loc_id = int(row['LocationID'])
+                coords = centroids.get(loc_id, {'lat': None, 'lon': None})
+                
+                if update_mode:
+                    db.query(models.Zone).filter(models.Zone.location_id == loc_id).update({
+                        "latitude": coords['lat'],
+                        "longitude": coords['lon']
+                    })
+                else:
+                    zone = models.Zone(
+                        location_id=loc_id,
+                        borough=row['Borough'],
+                        zone_name=row['Zone'],
+                        service_zone=row['service_zone'],
+                        latitude=coords['lat'],
+                        longitude=coords['lon']
+                    )
+                    zones_to_insert.append(zone)
 
-            db.bulk_save_objects(zones_to_insert)
+            if not update_mode:
+                db.bulk_save_objects(zones_to_insert)
+            
             db.commit()
-            print(f"Successfully seeded {len(zones_to_insert)} zones!")
+            print(f"Successfully synchronized {existing if update_mode else len(zones_to_insert)} zones with coordinates!")
 
     except Exception as e:
         print(f"Error seeding zones: {e}")
@@ -44,4 +74,5 @@ def seed_zones(csv_path: str):
 if __name__ == "__main__":
     current_dir = os.path.dirname(os.path.abspath(__file__))
     default_csv = os.path.join(current_dir, "..", "..", "datasets", "raw", "taxi_zone_lookup.csv")
-    seed_zones(default_csv)
+    centroids_csv = os.path.join(current_dir, "..", "..", "datasets", "raw", "taxi_zone_centroids.csv")
+    seed_zones(default_csv, centroids_csv)

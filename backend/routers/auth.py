@@ -60,9 +60,16 @@ def register_driver(driver: schemas.DriverCreate, db: Session = Depends(get_db))
     )
     return {"access_token": access_token, "token_type": "bearer"}
 
+import logging
+import time
+
+logger = logging.getLogger(__name__)
+
 @router.post("/login", response_model=schemas.Token)
 def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
-    # Check operator first, then driver
+    start_time = time.time()
+    
+    # Fast database lookup with indexed email
     user = db.query(models.Company).filter(models.Company.email == form_data.username).first()
     role = "operator"
     
@@ -70,7 +77,23 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
         user = db.query(models.Driver).filter(models.Driver.email == form_data.username).first()
         role = "driver"
         
-    if not user or not verify_password(form_data.password, user.password_hash):
+    db_lookup_time = time.time() - start_time
+    
+    if not user:
+        logger.warning(f"Failed login attempt for unknown user: {form_data.username}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect email or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+        
+    # Password verification - this is the CPU intensive part
+    hash_start = time.time()
+    is_valid = verify_password(form_data.password, user.password_hash)
+    hash_time = time.time() - hash_start
+    
+    if not is_valid:
+        logger.warning(f"Invalid password attempt for user: {form_data.username}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password",
@@ -82,6 +105,10 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
         data={"sub": user.email, "role": role, "user_id": user.id},
         expires_delta=access_token_expires
     )
+    
+    total_time = time.time() - start_time
+    logger.info(f"Successful login for {form_data.username} ({role}). Timing: DB={db_lookup_time:.3f}s, Hash={hash_time:.3f}s, Total={total_time:.3f}s")
+    
     return {"access_token": access_token, "token_type": "bearer"}
 
 @router.get("/me", response_model=schemas.UserProfile)

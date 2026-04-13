@@ -3,14 +3,14 @@ import { Treemap, ResponsiveContainer, Tooltip, LineChart, Line, XAxis, YAxis, C
 import { X } from 'lucide-react';
 import { api } from '../lib/axios';
 
-// Cool-toned gradient: Cyan -> Blue -> Violet -> Pink
+// Warm-toned gradient: Yellow -> Amber -> Orange -> Red -> Maroon
 const COLORS = [
-  '#06b6d4', // Cyan (Highest Traffic)
-  '#0ea5e9', // Light Blue
-  '#3b82f6', // Blue
-  '#8b5cf6', // Violet
-  '#ec4899', // Pink
-  '#f43f5e'  // Rose (Lowest Traffic)
+  '#fbbf24', // Amber/Yellow (Highest Traffic)
+  '#f59e0b', // Amber
+  '#f97316', // Orange
+  '#ef4444', // Red
+  '#8e2b4b', // Maroon (Soft) 
+  '#6e1a37'  // Maroon (Lowest Traffic - Primary)
 ];
 
 const CustomizedContent = (props) => {
@@ -65,7 +65,7 @@ const CustomTooltip = ({ active, payload }) => {
         <p className="text-white font-bold text-lg mb-1">{data.name}</p>
         <div className="flex items-center justify-between gap-4">
           <p className="text-slate-400 text-sm">7-Day Traffic:</p>
-          <p className="text-sky-500 font-black text-xl">{data.value.toLocaleString()}</p>
+          <p className="text-orange-500 font-black text-xl">{data.value.toLocaleString()}</p>
         </div>
       </div>
     );
@@ -131,7 +131,7 @@ export default function CityHeatmap() {
     return (
       <div className="h-[400px] rounded-2xl border border-[#222] bg-[#0a0a0a] flex items-center justify-center">
         <div className="animate-pulse flex flex-col items-center">
-          <div className="h-10 w-10 border-4 border-sky-500 border-t-transparent rounded-full animate-spin mb-4" />
+          <div className="h-10 w-10 border-4 border-orange-500 border-t-transparent rounded-full animate-spin mb-4" />
           <p className="text-slate-500 font-bold uppercase tracking-widest text-xs">Compiling City Heatmap...</p>
         </div>
       </div>
@@ -160,7 +160,7 @@ export default function CityHeatmap() {
            <div className="bg-[#0a0a0a] border border-[#333] rounded-3xl w-full max-w-4xl shadow-[0_0_50px_rgba(0,0,0,0.7)] overflow-hidden flex flex-col">
               <div className="flex justify-between items-center px-6 py-4 border-b border-[#222] bg-[#1a1a1a]">
                  <div>
-                   <p className="text-cyan-500 font-bold tracking-widest text-xs uppercase mb-1">Zone Analytics</p>
+                   <p className="text-orange-500 font-bold tracking-widest text-xs uppercase mb-1">Zone Analytics</p>
                    <h3 className="text-white text-xl font-bold">{selectedZone.name}</h3>
                  </div>
                  <button onClick={() => setSelectedZone(null)} className="w-10 h-10 rounded-full hover:bg-[#333] flex items-center justify-center text-slate-400 hover:text-white transition-colors cursor-pointer">
@@ -175,9 +175,9 @@ export default function CityHeatmap() {
                       <YAxis stroke="#666" tick={{fill: '#888', fontSize: 12}} />
                       <Tooltip 
                         contentStyle={{ backgroundColor: '#111', borderColor: '#333', borderRadius: '12px' }}
-                        itemStyle={{ color: '#0ea5e9', fontWeight: 'bold' }}
+                        itemStyle={{ color: '#10b981', fontWeight: 'bold' }}
                       />
-                      <Line type="monotone" dataKey="demand" stroke="#0ea5e9" strokeWidth={4} dot={false} activeDot={{ r: 8, fill: '#0ea5e9', stroke: '#fff', strokeWidth: 2 }} />
+                      <Line type="monotone" dataKey="demand" stroke="#10b981" strokeWidth={4} dot={false} activeDot={{ r: 8, fill: '#10b981', stroke: '#fff', strokeWidth: 2 }} />
                     </LineChart>
                  </ResponsiveContainer>
               </div>
