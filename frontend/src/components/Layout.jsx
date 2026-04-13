@@ -11,11 +11,27 @@ const ACCENT_CSS_MAP = {
   violet:  { '400': '#a78bfa', '500': '#8b5cf6', '600': '#7c3aed', glow: '139,92,246' },
   rose:    { '400': '#fb7185', '500': '#f43f5e', '600': '#e11d48', glow: '244,63,94' },
   cyan:    { '400': '#22d3ee', '500': '#06b6d4', '600': '#0891b2', glow: '6,182,212' },
+  maroon:  { '400': '#8e2b4b', '500': '#6e1a37', '600': '#521329', glow: '110,26,55' },
 };
 
 export default function Layout() {
   const { user, logout, loading } = useAuth();
   const location = useLocation();
+
+  const [defaultAccent, setDefaultAccent] = useState(() => localStorage.getItem('ds_accent') || 'orange');
+  const [theme, setTheme] = useState(defaultAccent);
+
+  // Sync CSS custom properties to :root whenever the default accent changes
+  useEffect(() => {
+    const colors = ACCENT_CSS_MAP[defaultAccent] || ACCENT_CSS_MAP.emerald;
+    const root = document.documentElement.style;
+    root.setProperty('--accent-400', colors['400']);
+    root.setProperty('--accent-500', colors['500']);
+    root.setProperty('--accent-600', colors['600']);
+    root.setProperty('--accent-glow', colors.glow);
+    root.setProperty('--accent-muted', `rgba(${colors.glow}, 0.1)`);
+    root.setProperty('--accent-border', `rgba(${colors.glow}, 0.2)`);
+  }, [defaultAccent]);
 
   // Apply saved theme mode on mount
   useEffect(() => {
@@ -42,31 +58,19 @@ export default function Layout() {
   }
 
   navItems.push({ label: 'Demand Forecast', path: '/forecast', icon: <Activity size={20} /> });
-  navItems.push({ label: 'Settings', path: '/settings', icon: <Settings size={20} /> });
 
-  const [defaultAccent, setDefaultAccent] = useState(() => localStorage.getItem('ds_accent') || 'orange');
-  const [theme, setTheme] = useState(defaultAccent);
 
-  // Sync CSS custom properties to :root whenever the default accent changes
-  useEffect(() => {
-    const colors = ACCENT_CSS_MAP[defaultAccent] || ACCENT_CSS_MAP.orange;
-    const root = document.documentElement.style;
-    root.setProperty('--accent-400', colors['400']);
-    root.setProperty('--accent-500', colors['500']);
-    root.setProperty('--accent-600', colors['600']);
-    root.setProperty('--accent-glow', colors.glow);
-    root.setProperty('--accent-muted', `rgba(${colors.glow}, 0.1)`);
-    root.setProperty('--accent-border', `rgba(${colors.glow}, 0.2)`);
-  }, [defaultAccent]);
 
   const themeColors = {
     orange: { main: 'text-orange-500', bg: 'bg-orange-500/10', border: 'border-orange-500/20', textSm: 'text-orange-400', glow: 'shadow-[0_0_10px_rgba(249,115,22,0.1)]', bgStrong: 'bg-orange-600/5', ring: 'selection:bg-orange-500/30 selection:text-orange-200' },
     amber: { main: 'text-amber-500', bg: 'bg-amber-500/10', border: 'border-amber-500/20', textSm: 'text-amber-400', glow: 'shadow-[0_0_10px_rgba(245,158,11,0.1)]', bgStrong: 'bg-amber-600/5', ring: 'selection:bg-amber-500/30 selection:text-amber-200' },
     emerald: { main: 'text-emerald-500', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20', textSm: 'text-emerald-400', glow: 'shadow-[0_0_10px_rgba(16,185,129,0.1)]', bgStrong: 'bg-emerald-600/5', ring: 'selection:bg-emerald-500/30 selection:text-emerald-200' },
+    green: { main: 'text-emerald-500', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20', textSm: 'text-emerald-400', glow: 'shadow-[0_0_10px_rgba(16,185,129,0.1)]', bgStrong: 'bg-emerald-600/5', ring: 'selection:bg-emerald-500/30 selection:text-emerald-200' },
     blue: { main: 'text-blue-500', bg: 'bg-blue-500/10', border: 'border-blue-500/20', textSm: 'text-blue-400', glow: 'shadow-[0_0_10px_rgba(59,130,246,0.1)]', bgStrong: 'bg-blue-600/5', ring: 'selection:bg-blue-500/30 selection:text-blue-200' },
     violet: { main: 'text-violet-500', bg: 'bg-violet-500/10', border: 'border-violet-500/20', textSm: 'text-violet-400', glow: 'shadow-[0_0_10px_rgba(139,92,246,0.1)]', bgStrong: 'bg-violet-600/5', ring: 'selection:bg-violet-500/30 selection:text-violet-200' },
     rose: { main: 'text-rose-500', bg: 'bg-rose-500/10', border: 'border-rose-500/20', textSm: 'text-rose-400', glow: 'shadow-[0_0_10px_rgba(244,63,94,0.1)]', bgStrong: 'bg-rose-600/5', ring: 'selection:bg-rose-500/30 selection:text-rose-200' },
     cyan: { main: 'text-cyan-500', bg: 'bg-cyan-500/10', border: 'border-cyan-500/20', textSm: 'text-cyan-400', glow: 'shadow-[0_0_10px_rgba(6,182,212,0.1)]', bgStrong: 'bg-cyan-600/5', ring: 'selection:bg-cyan-500/30 selection:text-cyan-200' },
+    maroon: { main: 'text-maroon-500', bg: 'bg-maroon-500/10', border: 'border-maroon-500/20', textSm: 'text-maroon-400', glow: 'shadow-[0_0_10px_rgba(110,26,55,0.1)]', bgStrong: 'bg-maroon-600/5', ring: 'selection:bg-maroon-500/30 selection:text-maroon-200' },
   };
   const ui = themeColors[theme] || themeColors.orange;
 

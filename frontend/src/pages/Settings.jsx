@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
-import { useOutletContext } from 'react-router-dom';
+import { useOutletContext, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { api } from '../lib/axios';
-import { Settings, Palette, Lock, Sun, Moon, Check, AlertTriangle, Eye, EyeOff, ChevronRight, Shield, User } from 'lucide-react';
+import { Settings, Palette, Lock, Sun, Moon, Check, AlertTriangle, Eye, EyeOff, ChevronRight, Shield, User, ArrowLeft } from 'lucide-react';
 
 export default function SettingsPage() {
   const { user } = useAuth();
   const { setTheme } = useOutletContext() || {};
+  const navigate = useNavigate();
 
   const [mode, setMode] = useState(() => localStorage.getItem('ds_mode') || 'dark');
   const [currentPassword, setCurrentPassword] = useState('');
@@ -46,14 +47,24 @@ export default function SettingsPage() {
   return (
     <div className="max-w-3xl mx-auto space-y-5">
       {/* Header */}
-      <div className="flex items-center gap-3">
-        <div className="p-2.5 rounded-xl bg-orange-500/10 border border-orange-500/20">
-          <Settings size={20} className="text-orange-500" />
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="p-2.5 rounded-xl bg-orange-500/10 border border-orange-500/20">
+            <Settings size={20} className="text-orange-500" />
+          </div>
+          <div>
+            <h1 className="text-xl font-bold text-white">Settings</h1>
+            <p className="text-slate-500 text-xs">Manage your preferences</p>
+          </div>
         </div>
-        <div>
-          <h1 className="text-xl font-bold text-white">Settings</h1>
-          <p className="text-slate-500 text-xs">Manage your preferences</p>
-        </div>
+        
+        <button 
+          onClick={() => navigate(-1)}
+          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#111] hover:bg-[#1a1a1a] border border-[#222] text-slate-400 hover:text-white transition-all text-xs font-bold cursor-pointer group"
+        >
+          <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
+          Back
+        </button>
       </div>
 
       {/* ===== APPEARANCE ===== */}
@@ -111,7 +122,7 @@ export default function SettingsPage() {
         </div>
         <div className="p-4">
           {pwSuccess && (
-            <div className="mb-3 flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 rounded-lg px-3 py-2 text-xs font-medium">
+            <div className="mb-3 flex items-center gap-2 bg-orange-500/10 border border-orange-500/30 text-orange-400 rounded-lg px-3 py-2 text-xs font-medium">
               <Check size={14} /> {pwSuccess}
             </div>
           )}
