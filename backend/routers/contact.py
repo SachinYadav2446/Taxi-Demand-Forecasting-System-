@@ -80,58 +80,44 @@ def _build_html_body(data: ContactMessage) -> str:
 def send_contact_message(data: ContactMessage):
     """
     Sends a support message.
-    - If SMTP is configured → sends a real email via Gmail.
-    - If SMTP is NOT configured → logs the message and still returns success
-      (so the frontend UX works during development).
     """
-
-    # ── Always log the message ──
-    print(f"DEBUG: Entering contact endpoint for subject: {data.subject}")
-    logger.info(
-        f"[CONTACT] From: {data.sender_name} <{data.sender_email}> | "
-        f"Subject: {data.subject} | Message: {data.message[:200]}"
-    )
-
-    # ── Try to send via Gmail SMTP ──
     support_email, smtp_password = _get_smtp_config()
-    print(f"DEBUG: Extracted config: email={support_email}, pass_len={len(smtp_password) if smtp_password else 0}")
+    
+    # ── Log Metadata ──
+    logger.info(f"[CONTACT] Attempting send from {data.sender_email} (Config: {support_email}, PassSet: {bool(smtp_password)})")
 
-    if smtp_password:
+    if not smtp_password:
+        logger.warning("[CONTACT] No SMTP_APP_PASSWORD found. Logging message locally.")
+        return {"status": "logged", "message": "Development mode: Message logged but not sent."}
+
+    try:
+        msg = MIMEMultipart("alternative")
+        msg["From"] = support_email
+        msg["To"] = support_email
+        msg["Reply-To"] = data.sender_email
+        msg["Subject"] = f"[DemandSight Support] {data.subject}"
+
+        # Build content
+        plain = f"From: {data.sender_name} ({data.sender_email})\nSubject: {data.subject}\n\n{data.message}"
+        msg.attach(MIMEText(plain, "plain"))
+        msg.attach(MIMEText(_build_html_body(data), "html"))
+
+        # ── Send Attempt (Try SSL 465 first, then TLS 587) ──
         try:
-            msg = MIMEMultipart("alternative")
-            msg["From"] = support_email
-            msg["To"] = support_email
-            msg["Reply-To"] = data.sender_email
-            msg["Subject"] = f"[DemandSight Support] {data.subject}"
-
-            print("DEBUG: Connecting to SMTP...")
-
-            # Plain text fallback
-            plain = (
-                f"From: {data.sender_name} ({data.sender_email})\n"
-                f"Subject: {data.subject}\n\n"
-                f"{data.message}"
-            )
-            msg.attach(MIMEText(plain, "plain"))
-            msg.attach(MIMEText(_build_html_body(data), "html"))
-
-            with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
+            logger.info("[CONTACT] Connecting via SSL (465)...")
+            with smtplib.SMTP_SSL("smtp.gmail.com", 465, timeout=10) as server:
+                server.login(support_email, smtp_password)
+                server.sendmail(support_email, support_email, msg.as_string())
+        except Exception as ssl_err:
+            logger.warning(f"[CONTACT] SSL failed ({ssl_err}), attempting TLS (587) fallback...")
+            with smtplib.SMTP("smtp.gmail.com", 587, timeout=10) as server:
+                server.starttls()
                 server.login(support_email, smtp_password)
                 server.sendmail(support_email, support_email, msg.as_string())
 
-            logger.info("[CONTACT] Email sent successfully via Gmail SMTP.")
-            return {"status": "sent", "method": "smtp"}
+        logger.info("[CONTACT] Email sent successfully.")
+        return {"status": "sent", "method": "smtp"}
 
-        except Exception as e:
-            logger.error(f"[CONTACT] SMTP send failed: {e}")
-            raise HTTPException(
-                status_code=500,
-                detail=f"Failed to send email: {str(e)}"
-            )
-    else:
-        # No SMTP credentials → still succeed for dev/demo purposes
-        logger.warning(
-            "[CONTACT] SMTP_APP_PASSWORD not set. Message logged but NOT emailed. "
-            "Set SMTP_EMAIL and SMTP_APP_PASSWORD env vars to enable email delivery."
-        )
-        return {"status": "logged", "method": "log_only"}
+    except Exception as e:
+        logger.error(f"[CONTACT] Final delivery failure: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Mail system error: {str(e)}")
