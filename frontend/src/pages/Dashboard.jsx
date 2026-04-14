@@ -624,8 +624,6 @@ export default function Dashboard() {
       </div>
       )}
 
- )}
-
       {isEditingProfile && (
         <EditProfileModal user={user} onClose={() => setIsEditingProfile(false)} />
       )}
