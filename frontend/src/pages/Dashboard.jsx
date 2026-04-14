@@ -2,10 +2,11 @@ import { useEffect, useMemo, useState } from 'react';
 import { useOutletContext, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { api } from '../lib/axios';
-import { Building2, Mail, MapPin, ShieldCheck, UserRound, Users, Settings2, X, Loader2, AlertTriangle, Car, Activity, Calendar, ChevronRight, TrendingUp, Zap } from 'lucide-react';
+import { Building2, Mail, MapPin, ShieldCheck, UserRound, Users, Settings2, X, Loader2, AlertTriangle, Car, Activity, Calendar, ChevronRight, TrendingUp, Zap, Star } from 'lucide-react';
 import CityHeatmap from '../components/CityHeatmap';
 import FleetAllocation from '../components/FleetAllocation';
 import SmartDispatch from '../components/SmartDispatch';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import ZoneMap from '../components/ZoneMap';
 
 function EditProfileModal({ user, onClose }) {
@@ -130,6 +131,34 @@ export default function Dashboard() {
   const [health, setHealth] = useState({ api: 'checking', model: 'checking' });
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [activeTab, setActiveTab] = useState('profile');
+  const [watchlist, setWatchlist] = useState([]);
+  const [loadingWatchlist, setLoadingWatchlist] = useState(false);
+  
+
+
+  const fetchWatchlist = async () => {
+    if (user?.role !== 'operator') return;
+    setLoadingWatchlist(true);
+    try {
+      const res = await api.get('/zones/company');
+      setWatchlist(res.data);
+    } catch (err) {
+      console.error("Failed to load watchlist", err);
+    } finally {
+      setLoadingWatchlist(false);
+    }
+  };
+
+  const toggleWatchlist = async (locationId) => {
+    try {
+      await api.post('/zones/watchlist/toggle', { location_id: locationId });
+      fetchWatchlist();
+    } catch (err) {
+      console.error("Failed to toggle watchlist", err);
+    }
+  };
+
+
 
   const { setTheme, defaultAccent } = useOutletContext() || {};
 
@@ -159,7 +188,6 @@ export default function Dashboard() {
     
     return () => setTheme(fallback);
   }, [activeTab, setTheme, defaultAccent]);
-
   useEffect(() => {
     const fetchZones = async () => {
       try {
@@ -190,6 +218,7 @@ export default function Dashboard() {
 
     if (user) {
       fetchZones();
+      fetchWatchlist();
     }
   }, [user]);
 
@@ -221,7 +250,7 @@ export default function Dashboard() {
 
       {/* Tab Navigation Menu */}
       <div className="flex p-1 bg-[#151515] rounded-2xl border border-[#222] shadow-sm w-fit mx-auto mb-2">
-        {['profile', 'operations', 'analytics'].map((tab) => (
+        {(user?.role === 'operator' ? ['profile', 'operations', 'analytics'] : ['profile', 'analytics']).map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
@@ -296,10 +325,12 @@ export default function Dashboard() {
                   <span className="text-sm text-white font-bold">New York City</span>
                 </div>
                 <div className="flex justify-between items-center py-3 border-b border-[#1a1a1a]">
-                  <span className="text-sm text-slate-500 font-medium">Membership</span>
+                  <span className="text-sm text-slate-500 font-medium">Joined</span>
                   <div className="flex items-center gap-2">
                     <Calendar size={14} className="text-orange-500/50" />
-                    <span className="text-sm text-white font-bold">April 2026</span>
+                    <span className="text-sm text-white font-bold">
+                      {new Date().toLocaleString('default', { month: 'long', year: 'numeric' })}
+                    </span>
                   </div>
                 </div>
                 <div className="flex justify-between items-center py-3">
@@ -419,6 +450,62 @@ export default function Dashboard() {
       {activeTab === 'operations' && (
       <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
       
+      {/* Operational Watchlist Feature */}
+      {user?.role === 'operator' && (
+        <section className="rounded-3xl border border-[#222] bg-[#0a0a0a] overflow-hidden p-6 relative shadow-2xl">
+          <div className="absolute top-0 left-0 w-32 h-32 bg-orange-500/5 rounded-full blur-[50px] pointer-events-none" />
+          <div className="flex items-center justify-between mb-6 relative z-10">
+            <div>
+              <p className="text-orange-400 text-xs font-bold uppercase tracking-[0.3em] mb-1">Fleet Watchlist</p>
+              <h2 className="text-xl font-black text-white">Priority Zones Monitor</h2>
+            </div>
+            <div className="px-3 py-1 rounded-full bg-orange-500/10 border border-orange-500/20 text-[10px] font-black text-orange-500 uppercase">
+              {watchlist.length} Pinned
+            </div>
+          </div>
+
+          <div className="relative z-10">
+            {loadingWatchlist ? (
+              <div className="flex justify-center py-12"><Loader2 className="animate-spin text-orange-500" /></div>
+            ) : watchlist.length === 0 ? (
+              <div className="text-center py-12 border-2 border-dashed border-[#1a1a1a] rounded-2xl">
+                <p className="text-slate-500 font-medium">No zones pinned to your watchlist yet.</p>
+                <p className="text-[10px] text-slate-600 uppercase mt-2">Pin zones from the analytics tab to monitor them here.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {watchlist.map(item => (
+                  <div key={item.location_id} className="p-4 rounded-2xl bg-[#0d0d0d] border border-[#1a1a1a] hover:border-orange-500/30 transition-all group relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-16 h-16 bg-orange-500/5 rounded-full blur-xl opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <div className="flex items-start justify-between mb-3 relative z-10">
+                      <div>
+                        <h4 className="text-white font-bold text-sm leading-tight group-hover:text-orange-500 transition-colors line-clamp-1">{item.zone_name}</h4>
+                        <p className="text-[10px] text-slate-500 font-bold uppercase mt-1">{item.borough}</p>
+                      </div>
+                      <button 
+                        onClick={() => toggleWatchlist(item.location_id)}
+                        className="p-1.5 rounded-lg bg-[#151515] text-slate-600 hover:text-red-500 hover:bg-red-500/10 transition-all ml-2"
+                        title="Remove from watchlist"
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
+                    <div className="flex items-end justify-between relative z-10">
+                      <div>
+                        <p className="text-[10px] text-slate-500 uppercase font-black mb-1">7D Traffic Balance</p>
+                        <p className="text-xl font-black text-white">{item.current_pickups.toLocaleString()}</p>
+                      </div>
+                      <div className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${item.current_pickups > 10000 ? 'bg-orange-500/10 text-orange-500' : 'bg-slate-500/10 text-slate-400'}`}>
+                        {item.current_pickups > 10000 ? 'HIGH SURGE' : 'STABLE'}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </section>
+      )}
 
       {/* Driver AI Dispatch Feature */}
       <section>
@@ -449,10 +536,20 @@ export default function Dashboard() {
           </p>
           <div className="space-y-3">
             {trends.top_zones.map((tz, i) => (
-              <div key={tz.location_id} className="flex flex-row justify-between items-center bg-[#111] border border-[#252525] rounded-2xl p-4">
-                <div>
-                  <p className="text-white font-bold">{i + 1}. {tz.zone_name}</p>
-                  <p className="text-slate-400 text-sm">{tz.borough}</p>
+              <div key={tz.location_id} className="flex flex-row justify-between items-center bg-[#111] border border-[#252525] rounded-2xl p-4 group">
+                <div className="flex items-center gap-4">
+                  {user?.role === 'operator' && (
+                    <button 
+                      onClick={() => toggleWatchlist(tz.location_id)}
+                      className={`transition-all ${watchlist.some(w => w.location_id === tz.location_id) ? 'text-orange-500' : 'text-slate-600 hover:text-orange-400'}`}
+                    >
+                      <Star size={18} fill={watchlist.some(w => w.location_id === tz.location_id) ? "currentColor" : "none"} />
+                    </button>
+                  )}
+                  <div>
+                    <p className="text-white font-bold">{i + 1}. {tz.zone_name}</p>
+                    <p className="text-slate-400 text-sm">{tz.borough}</p>
+                  </div>
                 </div>
                 <div className="text-right">
                   <p className="text-orange-400 font-bold">{tz.pickups.toLocaleString()} rides</p>
@@ -474,9 +571,19 @@ export default function Dashboard() {
           <div className="space-y-3">
             {trends.bottom_zones.map((bz, i) => (
               <div key={bz.location_id} className="flex flex-row justify-between items-center bg-[#111] border border-[#252525] rounded-2xl p-4">
-                <div>
-                  <p className="text-white font-bold">{i + 1}. {bz.zone_name}</p>
-                  <p className="text-slate-400 text-sm">{bz.borough}</p>
+                <div className="flex items-center gap-4">
+                  {user?.role === 'operator' && (
+                    <button 
+                       onClick={() => toggleWatchlist(bz.location_id)}
+                       className={`transition-all ${watchlist.some(w => w.location_id === bz.location_id) ? 'text-orange-500' : 'text-slate-600 hover:text-orange-400'}`}
+                    >
+                      <Star size={18} fill={watchlist.some(w => w.location_id === bz.location_id) ? "currentColor" : "none"} />
+                    </button>
+                  )}
+                  <div>
+                    <p className="text-white font-bold">{i + 1}. {bz.zone_name}</p>
+                    <p className="text-slate-400 text-sm">{bz.borough}</p>
+                  </div>
                 </div>
                 <div className="text-right">
                   <p className="text-orange-400 font-bold">{bz.pickups.toLocaleString()} rides</p>
@@ -514,9 +621,10 @@ export default function Dashboard() {
           <CityHeatmap />
         </div>
       </section>
-
       </div>
       )}
+
+ )}
 
       {isEditingProfile && (
         <EditProfileModal user={user} onClose={() => setIsEditingProfile(false)} />
