@@ -9,14 +9,19 @@
 
 body {
   margin: 0;
-  font-family: 'Sora', system-ui, Avenir, Helvetica, Arial, sans-serif;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
   font-weight: 400;
-  letter-spacing: 0.01em;
+  letter-spacing: -0.011em;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   background-color: #050505;
   color: #ffffff;
   transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Ensure font inheritance for all common UI elements */
+input, button, textarea, select, .recharts-text, .recharts-label {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif !important;
 }
 
 /* Sora looks best at lighter weights */
