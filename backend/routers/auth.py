@@ -14,9 +14,11 @@ router = APIRouter(
 
 @router.post("/register/operator", response_model=schemas.Token)
 def register_operator(operator: schemas.OperatorCreate, db: Session = Depends(get_db)):
-    db_user = db.query(models.Company).filter(models.Company.email == operator.email).first()
-    if db_user:
+    if db.query(models.Company).filter(models.Company.email == operator.email).first():
         raise HTTPException(status_code=400, detail="Email already registered")
+    
+    if db.query(models.Company).filter(models.Company.name == operator.name).first():
+        raise HTTPException(status_code=400, detail="Company name already taken")
     
     hashed_password = get_password_hash(operator.password)
     db_operator = models.Company(
