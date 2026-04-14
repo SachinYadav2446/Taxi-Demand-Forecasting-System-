@@ -6,7 +6,7 @@ import schemas
 from database import get_db
 from sqlalchemy import text
 from core.security import require_operator, get_current_user
-from datetime import timedelta
+from datetime import timedelta, datetime
 from routers.forecasts import get_zone_forecast
 
 router = APIRouter(
@@ -52,18 +52,70 @@ def update_company_zones(
     
     return {"message": "Company zones updated successfully", "mapped_zones": list(valid_zone_ids)}
 
-@router.get("/company", response_model=List[schemas.ZoneBase])
-def get_company_zones(
+@router.post("/watchlist/toggle")
+def toggle_watchlist_zone(
+    data: schemas.WatchlistToggle,
     db: Session = Depends(get_db),
     current_user: dict = Depends(require_operator)
 ):
     company_id = current_user["user"].id
-    zones = db.query(models.Zone).join(
-        models.CompanyZone, models.Zone.location_id == models.CompanyZone.location_id
-    ).filter(
-        models.CompanyZone.company_id == company_id
-    ).all()
-    return zones
+    existing = db.query(models.CompanyZone).filter(
+        models.CompanyZone.company_id == company_id,
+        models.CompanyZone.location_id == data.location_id
+    ).first()
+
+    if existing:
+        db.delete(existing)
+        db.commit()
+        return {"status": "unpinned", "location_id": data.location_id}
+    else:
+        # Verify zone exists
+        zone = db.query(models.Zone).filter(models.Zone.location_id == data.location_id).first()
+        if not zone:
+            raise HTTPException(status_code=404, detail="Zone not found")
+        
+        new_pin = models.CompanyZone(company_id=company_id, location_id=data.location_id)
+        db.add(new_pin)
+        db.commit()
+        return {"status": "pinned", "location_id": data.location_id}
+
+@router.get("/company", response_model=List[schemas.WatchlistItem])
+def get_company_watchlist(
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(require_operator)
+):
+    company_id = current_user["user"].id
+    
+    # 1. Get the latest time edge
+    max_date = db.execute(text("SELECT MAX(datetime) FROM historical_demand WHERE datetime < '2026-03-01'")).scalar()
+    if not max_date:
+        return []
+    seven_days_ago = max_date - timedelta(days=7)
+
+    # 2. Join CompanyZones with Zones and calculate their individual 7-day traffic
+    query = text("""
+        SELECT z.location_id, z.zone_name, z.borough, z.latitude, z.longitude, 
+               COALESCE(SUM(h.pickup_count), 0) as current_pickups
+        FROM company_zones cz
+        JOIN zones z ON cz.location_id = z.location_id
+        LEFT JOIN historical_demand h ON z.location_id = h.location_id AND h.datetime >= :start_date
+        WHERE cz.company_id = :comp_id
+        GROUP BY z.location_id, z.zone_name, z.borough, z.latitude, z.longitude
+        ORDER BY current_pickups DESC
+    """)
+    
+    results = db.execute(query, {"start_date": seven_days_ago, "comp_id": company_id}).fetchall()
+    
+    return [
+        {
+            "location_id": r.location_id,
+            "zone_name": r.zone_name,
+            "borough": r.borough,
+            "current_pickups": int(r.current_pickups),
+            "latitude": r.latitude,
+            "longitude": r.longitude
+        } for r in results
+    ]
 
 @router.get("/trends")
 def get_zone_trends(db: Session = Depends(get_db)):

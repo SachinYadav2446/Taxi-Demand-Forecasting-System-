@@ -75,3 +75,16 @@ class RecommendationItem(BaseModel):
     zone_name: str
     borough: str
     forecasted_pickups: int
+
+# --- Watchlist Schemas ---
+class WatchlistToggle(BaseModel):
+    location_id: int
+
+class WatchlistItem(BaseModel):
+    location_id: int
+    zone_name: str
+    borough: str
+    current_pickups: int
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+
