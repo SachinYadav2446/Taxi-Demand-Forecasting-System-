@@ -73,6 +73,23 @@ def seed_zones(csv_path: str, centroids_path: str = None):
 
 if __name__ == "__main__":
     current_dir = os.path.dirname(os.path.abspath(__file__))
-    default_csv = os.path.join(current_dir, "..", "..", "datasets", "raw", "taxi_zone_lookup.csv")
-    centroids_csv = os.path.join(current_dir, "..", "..", "datasets", "raw", "taxi_zone_centroids.csv")
+    
+    # Try multiple common relative paths for datasets to support both local and docker environments
+    possible_paths = [
+        os.path.join(current_dir, "..", "..", "datasets"), # Local dev
+        os.path.join(current_dir, "..", "datasets"),      # Docker mapping
+    ]
+    
+    dataset_dir = None
+    for path in possible_paths:
+        if os.path.exists(path):
+            dataset_dir = path
+            break
+            
+    if not dataset_dir:
+        print("Error: Could not find datasets directory in any expected location.")
+        sys.exit(1)
+
+    default_csv = os.path.join(dataset_dir, "raw", "taxi_zone_lookup.csv")
+    centroids_csv = os.path.join(dataset_dir, "raw", "taxi_zone_centroids.csv")
     seed_zones(default_csv, centroids_csv)

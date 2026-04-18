@@ -14,12 +14,23 @@ import models
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Point to root datasets folder
-RAW_DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "datasets", "raw")
+# Resolve root datasets folder robustly for both local and Docker environments
+current_script_dir = os.path.dirname(os.path.abspath(__file__))
+possible_dataset_roots = [
+    os.path.join(current_script_dir, "..", "..", "datasets"), # Local
+    os.path.join(current_script_dir, "..", "datasets"),      # Docker mapping
+]
+
+RAW_DATA_DIR = None
+for path in possible_dataset_roots:
+    raw_path = os.path.join(path, "raw")
+    if os.path.exists(raw_path):
+        RAW_DATA_DIR = raw_path
+        break
 
 def ingest_historical_data():
-    if not os.path.exists(RAW_DATA_DIR):
-        logger.error(f"Raw data directory not found: {RAW_DATA_DIR}")
+    if not RAW_DATA_DIR:
+        logger.error("Raw data directory not found in any expected location.")
         return
 
     db: Session = SessionLocal()
