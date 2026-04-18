@@ -83,6 +83,14 @@ function FitBounds() {
   return null;
 }
 
+function ZoomHandler({ zoom }) {
+  const map = useMap();
+  useEffect(() => {
+    map.setZoom(zoom, { animate: true });
+  }, [zoom, map]);
+  return null;
+}
+
 export default function ZoneMap() {
   const [viewMode, setViewMode] = useState('zone'); // 'zone' (Map) or 'area' (Treemap)
   const [data, setData] = useState([]);
@@ -91,6 +99,7 @@ export default function ZoneMap() {
   const [selectedZone, setSelectedZone] = useState(null);
   const [weather, setWeather] = useState(null);
   const [events, setEvents] = useState([]);
+  const [zoom, setZoom] = useState(11);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -207,82 +216,114 @@ export default function ZoneMap() {
       <div className="relative rounded-2xl overflow-hidden border border-[#222] bg-[#050505]" style={{ height: '500px' }}>
         {viewMode === 'zone' ? (
           /* --- LEAFLET MODE --- */
-          <MapContainer
-            center={[40.7128, -74.0060]}
-            zoom={11}
-            style={{ height: '100%', width: '100%', background: '#0a0a0a' }}
-            zoomControl={false}
-            attributionControl={false}
-          >
-            <FitBounds />
-            <TileLayer
-              url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-              attribution='&copy; CARTO'
-            />
-            {zonesWithPositions.map((zone) => {
-              const radius = Math.max(4, Math.min(18, (zone.pickups / maxPickups) * 18));
-              const color = getColor(zone.pickups, maxPickups);
-              return (
-                <CircleMarker
-                  key={zone.location_id}
-                  center={zone.position}
-                  radius={radius}
-                  pathOptions={{
-                    fillColor: color, fillOpacity: 0.65, color: color, weight: 1.5, opacity: 0.9,
-                  }}
-                  eventHandlers={{
-                    mouseover: (e) => {
-                      setHoveredZone(zone);
-                      e.target.setStyle({ fillOpacity: 1, weight: 3 });
-                    },
-                    mouseout: (e) => {
-                      setHoveredZone(null);
-                      e.target.setStyle({ fillOpacity: 0.65, weight: 1.5 });
-                    },
-                  }}
-                >
-                  <Popup>
-                    <div style={{ fontFamily: 'Sora, sans-serif', padding: '2px 0' }}>
-                      <p style={{ fontWeight: 700, fontSize: '13px', margin: 0, color: '#111' }}>{zone.name}</p>
-                      <p style={{ fontSize: '11px', color: '#777', margin: '2px 0' }}>{zone.borough}</p>
-                      <p style={{ fontWeight: 700, fontSize: '15px', color: color, margin: '4px 0 0' }}>
-                        {zone.pickups.toLocaleString()} rides
-                      </p>
-                    </div>
-                  </Popup>
-                </CircleMarker>
-              );
-            })}
+          <div className="relative w-full h-full">
+            <MapContainer
+              center={[40.7128, -74.0060]}
+              zoom={zoom}
+              scrollWheelZoom={false}
+              style={{ height: '100%', width: '100%', background: '#0a0a0a' }}
+              zoomControl={false}
+              attributionControl={false}
+              onZoomEnd={(e) => setZoom(e.target.getZoom())}
+            >
+              <FitBounds />
+              <ZoomHandler zoom={zoom} />
+              <TileLayer
+                url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+                attribution='&copy; CARTO'
+              />
+              {zonesWithPositions.map((zone) => {
+                const radius = Math.max(4, Math.min(18, (zone.pickups / maxPickups) * 18));
+                const color = getColor(zone.pickups, maxPickups);
+                return (
+                  <CircleMarker
+                    key={zone.location_id}
+                    center={zone.position}
+                    radius={radius}
+                    pathOptions={{
+                      fillColor: color, fillOpacity: 0.65, color: color, weight: 1.5, opacity: 0.9,
+                    }}
+                    eventHandlers={{
+                      mouseover: (e) => {
+                        setHoveredZone(zone);
+                        e.target.setStyle({ fillOpacity: 1, weight: 3 });
+                      },
+                      mouseout: (e) => {
+                        setHoveredZone(null);
+                        e.target.setStyle({ fillOpacity: 0.65, weight: 1.5 });
+                      },
+                    }}
+                  >
+                    <Popup>
+                      <div style={{ fontFamily: 'Sora, sans-serif', padding: '2px 0' }}>
+                        <p style={{ fontWeight: 700, fontSize: '13px', margin: 0, color: '#111' }}>{zone.name}</p>
+                        <p style={{ fontSize: '11px', color: '#777', margin: '2px 0' }}>{zone.borough}</p>
+                        <p style={{ fontWeight: 700, fontSize: '15px', color: color, margin: '4px 0 0' }}>
+                          {zone.pickups.toLocaleString()} rides
+                        </p>
+                      </div>
+                    </Popup>
+                  </CircleMarker>
+                );
+              })}
 
-            {/* Event Catalyst Markers */}
-            {events.map((event, idx) => (
-              event.coords && (
-                <CircleMarker
-                  key={`event-${idx}`}
-                  center={event.coords}
-                  radius={25}
-                  pathOptions={{
-                    fillColor: '#8b5cf6', fillOpacity: 0.1, color: '#8b5cf6', weight: 2, dashArray: '5, 10'
-                  }}
-                >
-                  <Popup>
-                    <div className="p-2 min-w-[150px]">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Zap size={16} className="text-purple-500" />
-                        <span className="text-xs font-black uppercase tracking-tight text-purple-600">Demand Catalyst</span>
+              {/* Event Catalyst Markers */}
+              {events.map((event, idx) => (
+                event.coords && (
+                  <CircleMarker
+                    key={`event-${idx}`}
+                    center={event.coords}
+                    radius={25}
+                    pathOptions={{
+                      fillColor: '#8b5cf6', fillOpacity: 0.1, color: '#8b5cf6', weight: 2, dashArray: '5, 10'
+                    }}
+                  >
+                    <Popup>
+                      <div className="p-2 min-w-[150px]">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Zap size={16} className="text-purple-500" />
+                          <span className="text-xs font-black uppercase tracking-tight text-purple-600">Demand Catalyst</span>
+                        </div>
+                        <h4 className="font-bold text-sm text-[#111]">{event.name}</h4>
+                        <p className="text-[10px] text-slate-500 mt-1 leading-tight">{event.description}</p>
+                        <div className="mt-3 pt-2 border-t border-slate-100 flex items-center justify-between">
+                           <span className="text-[9px] font-bold text-slate-400 uppercase">Impact Score</span>
+                           <span className="text-xs font-black text-purple-600">+{Math.round((event.impact-1)*100)}%</span>
+                        </div>
                       </div>
-                      <h4 className="font-bold text-sm text-[#111]">{event.name}</h4>
-                      <p className="text-[10px] text-slate-500 mt-1 leading-tight">{event.description}</p>
-                      <div className="mt-3 pt-2 border-t border-slate-100 flex items-center justify-between">
-                         <span className="text-[9px] font-bold text-slate-400 uppercase">Impact Score</span>
-                         <span className="text-xs font-black text-purple-600">+{Math.round((event.impact-1)*100)}%</span>
-                      </div>
-                    </div>
-                  </Popup>
-                </CircleMarker>
-              )
-            ))}
-          </MapContainer>
+                    </Popup>
+                  </CircleMarker>
+                )
+              ))}
+            </MapContainer>
+
+            {/* Custom Vertical Zoom Controller */}
+            <div className="absolute top-1/2 -translate-y-1/2 right-6 z-[1000] flex flex-col items-center gap-4 py-6 px-3 bg-[#0a0a0b]/90 backdrop-blur-3xl border border-white/10 rounded-3xl shadow-2xl">
+              <button 
+                onClick={() => setZoom(prev => Math.min(prev + 1, 18))}
+                className="w-10 h-10 flex items-center justify-center rounded-2xl bg-[#111] border border-white/5 text-slate-400 hover:text-white hover:border-orange-500/30 transition-all font-bold text-xl"
+              >
+                +
+              </button>
+              <div className="h-40 w-1 flex justify-center py-2">
+                <input 
+                  type="range"
+                  min="5"
+                  max="18"
+                  step="0.1"
+                  value={zoom}
+                  onChange={(e) => setZoom(parseFloat(e.target.value))}
+                  className="appearance-none w-1 h-32 bg-[#222] rounded-full [writing-mode:bt-lr] [-webkit-appearance:slider-vertical]"
+                />
+              </div>
+              <button 
+                onClick={() => setZoom(prev => Math.max(prev - 1, 5))}
+                className="w-10 h-10 flex items-center justify-center rounded-2xl bg-[#111] border border-white/5 text-slate-400 hover:text-white hover:border-orange-500/30 transition-all font-bold text-xl"
+              >
+                -
+              </button>
+            </div>
+          </div>
         ) : (
           /* --- TREEMAP MODE --- */
           <div className="w-full h-full p-4">
@@ -321,7 +362,7 @@ export default function ZoneMap() {
 
         {/* Zone Tooltip (Leaflet Hover) */}
         {viewMode === 'zone' && hoveredZone && (
-          <div className="absolute top-4 right-4 z-[1000] bg-[#111]/90 backdrop-blur-md border border-[#333] rounded-xl px-4 py-3 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+          <div className="absolute top-24 right-20 z-[1000] bg-[#111]/90 backdrop-blur-md border border-[#333] rounded-xl px-4 py-3 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
             <p className="text-white font-bold text-sm">{hoveredZone.name}</p>
             <p className="text-slate-500 font-bold text-[10px] uppercase tracking-widest">{hoveredZone.borough}</p>
             <p className="text-orange-500 font-black text-xl mt-1">{(hoveredZone.pickups || 0).toLocaleString()} <span className="text-[10px] text-slate-400 font-bold">RIDES</span></p>
