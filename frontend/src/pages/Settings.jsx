@@ -1,15 +1,15 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useOutletContext, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+import { useTheme } from '../context/ThemeContext';
 import { api } from '../lib/axios';
-import { Settings, Palette, Lock, Sun, Moon, Check, AlertTriangle, Eye, EyeOff, ChevronRight, Shield, User, ArrowLeft } from 'lucide-react';
+import { Settings, Palette, Lock, Sun, Moon, Check, AlertTriangle, Eye, EyeOff, Shield, User, ArrowLeft } from 'lucide-react';
 
 export default function SettingsPage() {
   const { user } = useAuth();
-  const { setTheme } = useOutletContext() || {};
   const navigate = useNavigate();
+  const { mode, setMode } = useTheme();
 
-  const [mode, setMode] = useState(() => localStorage.getItem('ds_mode') || 'dark');
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -18,15 +18,6 @@ export default function SettingsPage() {
   const [pwLoading, setPwLoading] = useState(false);
   const [pwSuccess, setPwSuccess] = useState('');
   const [pwError, setPwError] = useState('');
-
-  useEffect(() => {
-    if (setTheme) setTheme('orange');
-  }, [setTheme]);
-
-  useEffect(() => {
-    document.documentElement.setAttribute('data-mode', mode);
-    localStorage.setItem('ds_mode', mode);
-  }, [mode]);
 
   const handlePasswordChange = async (e) => {
     e.preventDefault();
@@ -45,7 +36,16 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="max-w-3xl mx-auto space-y-5">
+    <div className={`min-h-screen p-6 sm:p-12 relative overflow-x-hidden font-poppins transition-colors duration-500 ${
+      mode === 'light' ? 'bg-[#fdf6ef] text-[#1a1a1a]' : 'bg-[#050505] text-white'
+    }`}>
+      {/* Background Decor - Only visible in dark mode for aesthetic depth */}
+      <div className={`fixed inset-0 pointer-events-none transition-opacity duration-700 ${mode === 'light' ? 'opacity-0' : 'opacity-20'}`}>
+        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-orange-600/10 rounded-full blur-[120px]" />
+        <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-blue-600/10 rounded-full blur-[120px]" />
+      </div>
+
+      <div className="max-w-3xl mx-auto space-y-8 relative z-10">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -53,14 +53,18 @@ export default function SettingsPage() {
             <Settings size={20} className="text-orange-500" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-white">Settings</h1>
+            <h1 className={`text-xl font-bold ${mode === 'light' ? 'text-black' : 'text-white'}`}>Settings</h1>
             <p className="text-slate-500 text-xs">Manage your preferences</p>
           </div>
         </div>
         
         <button 
           onClick={() => navigate(-1)}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#111] hover:bg-[#1a1a1a] border border-[#222] text-slate-400 hover:text-white transition-all text-xs font-bold cursor-pointer group"
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all text-xs font-bold cursor-pointer group border ${
+            mode === 'light' 
+              ? 'bg-white hover:bg-slate-50 border-slate-200 text-slate-600 shadow-sm' 
+              : 'bg-[#111] hover:bg-[#1a1a1a] border-[#222] text-slate-400 hover:text-white'
+          }`}
         >
           <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
           Back
@@ -68,44 +72,56 @@ export default function SettingsPage() {
       </div>
 
       {/* ===== APPEARANCE ===== */}
-      <div className="rounded-2xl border border-[#222] bg-[#0a0a0a] overflow-hidden">
-        <div className="px-5 py-3 border-b border-[#222] flex items-center gap-2">
+      <div className={`rounded-2xl border transition-colors duration-500 overflow-hidden ${
+        mode === 'light' ? 'bg-white border-slate-200 shadow-sm' : 'bg-[#0a0a0a] border-[#222]'
+      }`}>
+        <div className={`px-5 py-3 border-b flex items-center gap-2 ${mode === 'light' ? 'border-slate-100' : 'border-[#222]'}`}>
           <Palette size={15} className="text-orange-400" />
           <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Appearance</span>
         </div>
         <div className="p-4">
           <div className="flex gap-3">
+            {/* Dark Mode Button */}
             <button
               onClick={() => setMode('dark')}
               className={`flex-1 flex items-center gap-3 px-4 py-3.5 rounded-xl border-2 transition-all cursor-pointer group ${
                 mode === 'dark'
                   ? 'border-orange-500/60 bg-orange-500/5'
-                  : 'border-[#222] hover:border-[#333] bg-[#111]'
+                  : mode === 'light'
+                    ? 'border-slate-200 bg-white hover:border-slate-300'
+                    : 'border-[#222] bg-[#111] hover:border-[#333]'
               }`}
             >
-              <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${mode === 'dark' ? 'bg-orange-500/15' : 'bg-[#1a1a1a]'}`}>
+              <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                mode === 'dark' ? 'bg-orange-500/15' : mode === 'light' ? 'bg-slate-100' : 'bg-[#1a1a1a]'
+              }`}>
                 <Moon size={18} className={mode === 'dark' ? 'text-orange-400' : 'text-slate-500'} />
               </div>
               <div className="text-left flex-1">
-                <p className={`text-sm font-semibold ${mode === 'dark' ? 'text-white' : 'text-slate-400'}`}>Dark Mode</p>
+                <p className={`text-sm font-semibold ${
+                  mode === 'dark' ? 'text-white' : 'text-slate-700'
+                }`}>Dark Mode</p>
                 <p className="text-xs text-slate-500">Easy on the eyes</p>
               </div>
               {mode === 'dark' && <Check size={16} className="text-orange-400" />}
             </button>
 
+            {/* Light Mode Button */}
             <button
               onClick={() => setMode('light')}
               className={`flex-1 flex items-center gap-3 px-4 py-3.5 rounded-xl border-2 transition-all cursor-pointer group ${
                 mode === 'light'
                   ? 'border-orange-500/60 bg-orange-500/5'
-                  : 'border-[#222] hover:border-[#333] bg-[#111]'
+                  : 'border-[#222] bg-[#111] hover:border-[#333]'
               }`}
             >
-              <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${mode === 'light' ? 'bg-orange-500/15' : 'bg-[#1a1a1a]'}`}>
-                <Sun size={18} className={mode === 'light' ? 'text-orange-400' : 'text-slate-500'} />
+              <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                mode === 'light' ? 'bg-orange-500/15' : 'bg-[#1a1a1a]'
+              }`}>
+                <Sun size={18} className={mode === 'light' ? 'text-orange-400' : 'text-slate-400'} />
               </div>
               <div className="text-left flex-1">
-                <p className={`text-sm font-semibold ${mode === 'light' ? 'text-white' : 'text-slate-400'}`}>Light Mode</p>
+                <p className={`text-sm font-semibold ${mode === 'light' ? 'text-black' : 'text-slate-300'}`}>Light Mode</p>
                 <p className="text-xs text-slate-500">Warm cream theme</p>
               </div>
               {mode === 'light' && <Check size={16} className="text-orange-400" />}
@@ -115,8 +131,10 @@ export default function SettingsPage() {
       </div>
 
       {/* ===== SECURITY ===== */}
-      <div className="rounded-2xl border border-[#222] bg-[#0a0a0a] overflow-hidden">
-        <div className="px-5 py-3 border-b border-[#222] flex items-center gap-2">
+      <div className={`rounded-2xl border transition-colors duration-500 overflow-hidden ${
+        mode === 'light' ? 'bg-white border-slate-200 shadow-sm' : 'bg-[#0a0a0a] border-[#222]'
+      }`}>
+        <div className={`px-5 py-3 border-b flex items-center gap-2 ${mode === 'light' ? 'border-slate-100' : 'border-[#222]'}`}>
           <Shield size={15} className="text-orange-400" />
           <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Security</span>
         </div>
@@ -137,7 +155,9 @@ export default function SettingsPage() {
                 <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1.5">Current Password</label>
                 <div className="relative">
                   <input type={showCurrentPw ? 'text' : 'password'} value={currentPassword} onChange={e => setCurrentPassword(e.target.value)} required
-                    className="w-full bg-[#111] border border-[#333] rounded-lg px-3 py-2.5 pr-9 text-sm text-white focus:outline-none focus:border-orange-500 transition-colors" />
+                    className={`w-full border rounded-lg px-3 py-2.5 pr-9 text-sm focus:outline-none focus:border-orange-500 transition-colors ${
+                      mode === 'light' ? 'bg-slate-50 border-slate-200 text-black' : 'bg-[#111] border-[#333] text-white'
+                    }`} />
                   <button type="button" onClick={() => setShowCurrentPw(!showCurrentPw)} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white transition-colors">
                     {showCurrentPw ? <EyeOff size={14} /> : <Eye size={14} />}
                   </button>
@@ -147,7 +167,9 @@ export default function SettingsPage() {
                 <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1.5">New Password</label>
                 <div className="relative">
                   <input type={showNewPw ? 'text' : 'password'} value={newPassword} onChange={e => setNewPassword(e.target.value)} required minLength={6}
-                    className="w-full bg-[#111] border border-[#333] rounded-lg px-3 py-2.5 pr-9 text-sm text-white focus:outline-none focus:border-orange-500 transition-colors" />
+                    className={`w-full border rounded-lg px-3 py-2.5 pr-9 text-sm focus:outline-none focus:border-orange-500 transition-colors ${
+                      mode === 'light' ? 'bg-slate-50 border-slate-200 text-black' : 'bg-[#111] border-[#333] text-white'
+                    }`} />
                   <button type="button" onClick={() => setShowNewPw(!showNewPw)} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white transition-colors">
                     {showNewPw ? <EyeOff size={14} /> : <Eye size={14} />}
                   </button>
@@ -156,7 +178,9 @@ export default function SettingsPage() {
               <div>
                 <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1.5">Confirm Password</label>
                 <input type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} required minLength={6}
-                  className="w-full bg-[#111] border border-[#333] rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-orange-500 transition-colors" />
+                  className={`w-full border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-orange-500 transition-colors ${
+                    mode === 'light' ? 'bg-slate-50 border-slate-200 text-black' : 'bg-[#111] border-[#333] text-white'
+                  }`} />
               </div>
             </div>
             <button type="submit" disabled={pwLoading}
@@ -168,26 +192,31 @@ export default function SettingsPage() {
       </div>
 
       {/* ===== ACCOUNT INFO ===== */}
-      <div className="rounded-2xl border border-[#222] bg-[#0a0a0a] overflow-hidden">
-        <div className="px-5 py-3 border-b border-[#222] flex items-center gap-2">
+      <div className={`rounded-2xl border transition-colors duration-500 overflow-hidden ${
+        mode === 'light' ? 'bg-white border-slate-200 shadow-sm' : 'bg-[#0a0a0a] border-[#222]'
+      }`}>
+        <div className={`px-5 py-3 border-b flex items-center gap-2 ${mode === 'light' ? 'border-slate-100' : 'border-[#222]'}`}>
           <User size={15} className="text-orange-400" />
           <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Account</span>
         </div>
-        <div className="divide-y divide-[#222]">
+        <div className={`divide-y ${mode === 'light' ? 'divide-slate-50' : 'divide-[#1a1a1a]'}`}>
           {[
             { label: 'Name', value: user?.name },
             { label: 'Email', value: user?.email },
             { label: 'Role', value: user?.role, capitalize: true },
             { label: 'User ID', value: `#${user?.id}`, mono: true },
           ].map(item => (
-            <div key={item.label} className="flex items-center justify-between px-5 py-3 hover:bg-[#111] transition-colors">
+            <div key={item.label} className={`flex items-center justify-between px-5 py-3 transition-colors ${
+              mode === 'light' ? 'hover:bg-slate-50/50' : 'hover:bg-[#111]'
+            }`}>
               <span className="text-slate-500 text-sm">{item.label}</span>
-              <span className={`text-sm font-medium text-white ${item.capitalize ? 'capitalize' : ''} ${item.mono ? 'font-mono text-slate-400' : ''}`}>
+              <span className={`text-sm font-medium ${mode === 'light' ? 'text-black' : 'text-white'} ${item.capitalize ? 'capitalize' : ''} ${item.mono ? 'font-mono text-slate-400' : ''}`}>
                 {item.value}
               </span>
             </div>
           ))}
         </div>
+      </div>
       </div>
     </div>
   );
