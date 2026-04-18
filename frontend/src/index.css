@@ -9,20 +9,18 @@
   --color-maroon-600: #521329;
 }
 
+* {
+  font-family: 'Poppins', 'Inter', system-ui, -apple-system, sans-serif !important;
+}
+
 body {
   margin: 0;
-  font-family: 'Poppins', 'Inter', system-ui, -apple-system, sans-serif;
   font-weight: 400;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.025em;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   background-color: #020202;
   color: #ffffff;
-}
-
-/* Ensure font inheritance for all common UI elements */
-input, button, textarea, select, .recharts-text, .recharts-label {
-  font-family: 'Poppins', 'Inter', system-ui, -apple-system, sans-serif !important;
 }
 
 .font-black { font-weight: 900 !important; }

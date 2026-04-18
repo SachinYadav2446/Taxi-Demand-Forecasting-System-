@@ -1,12 +1,14 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+import { useTheme } from '../context/ThemeContext';
 import { motion, AnimatePresence, useScroll, useTransform, useInView } from 'framer-motion';
 import { api } from '../lib/axios';
 import {
   Activity, ArrowRight, BrainCircuit, ChevronRight, Zap, Globe, Layers,
-  Menu, X, MessageSquare, Mail, Send, CheckCircle2, Cpu, Workflow,
-  Terminal, Map, TrendingUp, Shield, BarChart3, ExternalLink
+  Terminal, Map, TrendingUp, Shield, BarChart3, ExternalLink, Lock,
+  MapPin, Route, PieChart, Users, Gauge, Cpu, User, Settings,
+  X, Menu, CheckCircle2, Mail, MessageSquare, Send, Workflow
 } from 'lucide-react';
 
 /* ─── Magnetic Wrapper ─── */
@@ -42,7 +44,7 @@ function MagneticButton({ children, className, onClick }) {
 }
 
 /* ─── Animated Counter ─── */
-function Counter({ end, suffix = '', label, icon }) {
+function Counter({ end, suffix = '', label, icon, mode }) {
   const ref = useRef(null);
   const inView = useInView(ref, { once: true });
   const [val, setVal] = useState(0);
@@ -55,11 +57,13 @@ function Counter({ end, suffix = '', label, icon }) {
   }, [inView, end]);
   return (
     <motion.div ref={ref} initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
-      className="relative group p-12 rounded-[3.5rem] border border-white/[0.06] bg-black/40 backdrop-blur-[100px] hover:border-orange-500/30 transition-all duration-700 text-center overflow-hidden font-poppins shadow-2xl">
+      className={`relative group p-12 rounded-[3.5rem] border transition-all duration-700 text-center overflow-hidden font-poppins shadow-2xl ${
+        mode === 'light' ? 'bg-white border-slate-100 hover:shadow-orange-500/5' : 'bg-black/40 border-white/[0.06] backdrop-blur-[100px] hover:border-orange-500/30'
+      }`}>
       <div className="absolute inset-0 bg-gradient-to-br from-orange-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-1000" />
       <div className="relative z-10">
         <div className="w-16 h-16 rounded-2xl bg-orange-500/10 text-orange-500 flex items-center justify-center mx-auto mb-8 group-hover:scale-110 group-hover:rotate-6 transition-all duration-500">{icon}</div>
-        <div className="text-6xl sm:text-7xl font-black text-white tracking-tighter mb-4 leading-none">{val.toFixed(end % 1 ? 1 : 0)}{suffix}</div>
+        <div className={`text-6xl sm:text-7xl font-black tracking-tighter mb-4 leading-none ${mode === 'light' ? 'text-black' : 'text-white'}`}>{val.toFixed(end % 1 ? 1 : 0)}{suffix}</div>
         <div className="text-[11px] font-black text-slate-500 uppercase tracking-[0.4em]">{label}</div>
       </div>
     </motion.div>
@@ -67,44 +71,48 @@ function Counter({ end, suffix = '', label, icon }) {
 }
 
 /* ─── Feature Detail Modal ─── */
-function FeatureModal({ feature, onClose }) {
+function FeatureModal({ feature, onClose, mode }) {
   if (!feature) return null;
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-      className="fixed inset-0 z-[200] flex items-center justify-center p-4 sm:p-8" onClick={onClose}>
+      className="fixed inset-0 z-[500] flex items-center justify-center p-4 sm:p-8" onClick={onClose}>
       {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/80 backdrop-blur-xl" />
+      <div className={`absolute inset-0 backdrop-blur-xl ${mode === 'light' ? 'bg-white/60' : 'bg-black/80'}`} />
       {/* Card */}
       <motion.div
-        initial={{ scale: 0.5, opacity: 0, filter: 'blur(10px)' }}
-        animate={{ scale: 1, opacity: 1, filter: 'blur(0px)' }}
-        exit={{ scale: 1.5, opacity: 0, filter: 'blur(20px)' }}
-        transition={{ type: 'spring', bounce: 0.3, duration: 0.8 }}
+        initial={{ scale: 0.9, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        exit={{ scale: 0.9, opacity: 0 }}
+        transition={{ type: 'spring', bounce: 0, duration: 0.4 }}
         onClick={e => e.stopPropagation()}
-        className="relative w-full max-w-2xl max-h-[85vh] overflow-y-auto bg-[#0a0a0a] border border-white/[0.06] rounded-[2.5rem] p-8 sm:p-12 shadow-2xl">
+        className={`relative w-full max-w-2xl max-h-[85vh] overflow-y-auto border-2 rounded-[2.5rem] p-8 sm:p-12 shadow-2xl transition-colors duration-500 z-[501] pointer-events-auto ${
+          mode === 'light' ? 'bg-white border-orange-500/20 text-slate-900' : 'bg-neutral-900 border-orange-500/30 text-white'
+        }`}>
         {/* Close */}
-        <button onClick={onClose} className="absolute top-6 right-6 w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 transition-all">
+        <button onClick={onClose} className={`absolute top-6 right-6 w-10 h-10 rounded-full flex items-center justify-center border transition-all ${
+          mode === 'light' ? 'bg-black/5 border-black/10 text-slate-600' : 'bg-white/5 border-white/10 text-slate-400'
+        } hover:scale-110`}>
           <X size={18} />
         </button>
 
         {/* Header */}
         <div className="flex items-center gap-5 mb-8">
-          <div className={`w-16 h-16 shrink-0 rounded-2xl flex items-center justify-center ${feature.color} border border-white/10`}>{feature.icon}</div>
+          <div className={`w-16 h-16 shrink-0 rounded-2xl flex items-center justify-center ${feature.color} border ${mode === 'light' ? 'border-orange-500/20' : 'border-white/10'}`}>{feature.icon}</div>
           <div>
-            <h2 className="text-3xl font-black text-white italic tracking-tight uppercase">{feature.title}</h2>
+            <h2 className={`text-3xl font-black tracking-tight uppercase ${mode === 'light' ? 'text-black' : 'text-white'}`}>{feature.title}</h2>
             <p className="text-xs font-bold text-slate-600 uppercase tracking-widest mt-1">{feature.tag}</p>
           </div>
         </div>
 
         {/* Description */}
-        <p className="text-slate-400 leading-relaxed mb-10">{feature.detail}</p>
+        <p className={`leading-relaxed mb-10 ${mode === 'light' ? 'text-slate-600' : 'text-slate-400'}`}>{feature.detail}</p>
 
         {/* Live Stats */}
         <div className="grid grid-cols-3 gap-4 mb-10">
           {feature.stats.map((s, i) => (
             <div key={i} className="bg-white/[0.02] border border-white/[0.04] rounded-2xl p-5 text-center">
               <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 0.2 + i * 0.1, type: 'spring' }}
-                className="text-2xl font-black text-white italic">{s.value}</motion.div>
+                className="text-2xl font-black text-white">{s.value}</motion.div>
               <div className="text-[9px] font-bold text-slate-600 uppercase tracking-widest mt-1">{s.label}</div>
             </div>
           ))}
@@ -141,13 +149,9 @@ function FeatureModal({ feature, onClose }) {
           </div>
         </div>
 
-        {/* CTAs */}
-        <div className="flex flex-wrap gap-3">
-          <Link to={feature.cta.link} className="px-8 py-3 bg-orange-500 text-black font-black rounded-xl uppercase text-[10px] tracking-widest hover:bg-white transition-all flex items-center gap-2">
-            {feature.cta.label} <ArrowRight size={14} />
-          </Link>
-          <Link to="/docs" className="px-8 py-3 border border-white/10 text-white font-black rounded-xl uppercase text-[10px] tracking-widest hover:bg-white/5 transition-all">
-            Read Docs
+        <div className="flex flex-wrap gap-4">
+          <Link to={user ? '/dashboard' : feature.cta.link} className="px-10 py-4 bg-orange-600 text-white font-black rounded-xl uppercase text-sm tracking-widest hover:bg-white hover:text-black transition-all flex items-center gap-2 font-poppins">
+            {user ? 'Launch Insight' : feature.cta.label} <ArrowRight size={16} />
           </Link>
         </div>
       </motion.div>
@@ -156,18 +160,38 @@ function FeatureModal({ feature, onClose }) {
 }
 
 /* ─── Feature Card (clickable) ─── */
-function FeatureCard({ feature, onClick, delay }) {
+function FeatureCard({ feature, onClick, delay, mode }) {
   return (
-    <motion.div initial={{ opacity: 0, y: 40 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay }}
-      onClick={onClick}
-      className="group relative p-12 rounded-[3rem] border border-white/[0.08] bg-black/40 backdrop-blur-3xl hover:border-orange-500/40 transition-all duration-700 cursor-pointer overflow-hidden shadow-xl">
-      <div className="absolute inset-0 bg-gradient-to-br from-orange-500/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-all duration-700" />
-      <div className="relative z-10 space-y-8">
-        <div className={`w-16 h-16 rounded-2xl flex items-center justify-center border border-white/10 ${feature.color} group-hover:bg-orange-500 group-hover:text-black group-hover:border-orange-500 transition-all duration-500`}>{feature.icon}</div>
-        <h3 className="text-3xl font-black text-white italic tracking-tight uppercase">{feature.title}</h3>
-        <p className="text-slate-500 leading-relaxed">{feature.text}</p>
-        <div className="flex items-center gap-2 text-orange-500 text-xs font-bold uppercase tracking-widest opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 transition-all duration-300">
-          Click to explore <ArrowRight size={14} />
+    <motion.div 
+      initial={{ opacity: 0, y: 40 }} 
+      whileInView={{ opacity: 1, y: 0 }} 
+      viewport={{ once: true }} 
+      transition={{ delay }}
+      whileHover={{ scale: 1.03, y: -5 }}
+      whileTap={{ scale: 0.98 }}
+      className={`group relative p-12 rounded-[3rem] border transition-all duration-700 cursor-pointer overflow-hidden shadow-xl z-20 ${
+        mode === 'light' ? 'bg-white border-slate-200' : 'bg-black/40 border-white/[0.08] backdrop-blur-3xl'
+      } hover:border-orange-500/40`}
+    >
+      {/* Click Overlay */}
+      <div 
+        onClick={onClick}
+        className="absolute inset-0 z-30 opacity-0 bg-white" 
+      />
+
+      <div className="absolute inset-0 bg-gradient-to-br from-orange-500/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-all duration-700 pointer-events-none" />
+      
+      <div className="relative z-10 space-y-8 pointer-events-none">
+        <div className={`w-16 h-16 rounded-2xl flex items-center justify-center border transition-all duration-500 ${
+          mode === 'light' ? 'border-orange-500/20' : 'border-white/10'
+        } ${feature.color} group-hover:bg-orange-500 group-hover:text-black group-hover:border-orange-500`}>{feature.icon}</div>
+        <h3 className={`text-3xl font-black tracking-tight uppercase ${mode === 'light' ? 'text-black' : 'text-white'}`}>{feature.title}</h3>
+        <p className={`leading-relaxed ${mode === 'light' ? 'text-slate-500' : 'text-slate-400'}`}>{feature.text}</p>
+        <div className={`flex items-center justify-between pt-6 border-t mt-4 ${mode === 'light' ? 'border-slate-100' : 'border-white/[0.04]'}`}>
+          <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] group-hover:text-orange-500 transition-colors duration-500 font-poppins">Explore Insight</span>
+          <div className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-slate-400 group-hover:bg-orange-500 group-hover:text-black group-hover:border-orange-500 transition-all duration-500 shadow-xl group-hover:scale-110">
+            <ArrowRight size={18} />
+          </div>
         </div>
       </div>
     </motion.div>
@@ -177,7 +201,7 @@ function FeatureCard({ feature, onClick, delay }) {
 /* ─── Features Data ─── */
 const features = [
   {
-    icon: <Cpu size={28} />, title: 'Zone Intel', color: 'text-orange-500 bg-orange-500/10', delay: 0.1,
+    icon: <MapPin size={28} />, title: 'Zone Intel', color: 'text-orange-500 bg-orange-500/10', delay: 0.1,
     text: 'Real-time demand heatmaps across all 263 NYC taxi zones. Know where riders need you before they do.',
     tag: 'Geospatial Intelligence',
     detail: 'Our zone intelligence engine continuously processes trip data from all 263 official NYC TLC zones. Each zone gets a real-time demand score updated every 15 minutes, layered onto an interactive Leaflet map with color-coded intensity overlays.',
@@ -197,7 +221,7 @@ const features = [
     cta: { label: 'Try Forecasting', link: '/login' },
   },
   {
-    icon: <Workflow size={28} />, title: 'Fleet Sync', color: 'text-purple-400 bg-purple-500/10', delay: 0.3,
+    icon: <Route size={28} />, title: 'Fleet Sync', color: 'text-purple-400 bg-purple-500/10', delay: 0.3,
     text: 'Coordinate positioning across your entire fleet. Reduce idle time by up to 40% with predictive repositioning.',
     tag: 'Fleet Management',
     detail: 'Fleet Sync uses demand forecasts to generate optimal positioning suggestions for every vehicle in your fleet. The system considers current driver location, predicted surge zones, and travel time to minimize dead-miles and maximize ride coverage.',
@@ -207,7 +231,7 @@ const features = [
     cta: { label: 'Manage Fleet', link: '/login' },
   },
   {
-    icon: <Map size={28} />, title: 'Live Maps', color: 'text-emerald-400 bg-emerald-500/10', delay: 0.15,
+    icon: <Globe size={28} />, title: 'Live Maps', color: 'text-emerald-400 bg-emerald-500/10', delay: 0.15,
     text: 'Interactive Leaflet maps with zone-level overlays showing demand intensity, surge pricing, and competitor density.',
     tag: 'Visualization Layer',
     detail: 'Our mapping layer renders all 263 NYC taxi zones as interactive polygons on a Leaflet-powered map. Each zone is color-coded by demand intensity with smooth transitions. Click any zone to see detailed forecasts, historical trends, and nearby driver positions.',
@@ -217,7 +241,7 @@ const features = [
     cta: { label: 'Open Maps', link: '/login' },
   },
   {
-    icon: <TrendingUp size={28} />, title: 'Revenue AI', color: 'text-amber-400 bg-amber-500/10', delay: 0.25,
+    icon: <Gauge size={28} />, title: 'Revenue AI', color: 'text-amber-400 bg-amber-500/10', delay: 0.25,
     text: 'Track hourly earnings projections. Our models identify optimal shift times and high-value pickup corridors.',
     tag: 'Revenue Optimization',
     detail: 'Revenue AI combines demand forecasts with historical fare data to project hourly earnings for each zone. The system identifies the most profitable pickup corridors and recommends optimal shift start/end times based on your driving patterns.',
@@ -227,7 +251,7 @@ const features = [
     cta: { label: 'See Revenue Data', link: '/login' },
   },
   {
-    icon: <Shield size={28} />, title: 'Role Access', color: 'text-rose-400 bg-rose-500/10', delay: 0.35,
+    icon: <Users size={28} />, title: 'Role Access', color: 'text-rose-400 bg-rose-500/10', delay: 0.35,
     text: 'Operator dashboards, driver views, and admin panels — each with tailored forecasting depth and fleet controls.',
     tag: 'Access Control',
     detail: 'DemandSight supports role-based access with distinct interfaces for operators and drivers. Operators get fleet management, zone analytics, and bulk forecasting tools. Drivers see simplified demand maps, shift recommendations, and personal earnings tracking.',
@@ -248,7 +272,7 @@ const carouselStats = [
   { end: 15, suffix: "m", label: "Refresh Interval", icon: <Activity size={24} /> },
 ];
 
-function StatsCarousel() {
+function StatsCarousel({ mode }) {
   const [index, setIndex] = useState(0);
 
   useEffect(() => {
@@ -270,13 +294,13 @@ function StatsCarousel() {
         <div className="hidden lg:flex flex-col gap-10 text-right w-48 font-poppins">
           <motion.div initial={{ opacity: 0, x: -30 }} whileInView={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }} className="space-y-2 group cursor-default">
             <p className="text-[10px] font-black text-slate-600 uppercase tracking-[0.3em] group-hover:text-orange-500 transition-colors">Infrastructure</p>
-            <p className="text-[15px] font-bold text-white group-hover:translate-x-[-4px] transition-transform">Edge Node NYC-1</p>
-            <div className="h-0.5 w-full bg-white/5 group-hover:bg-orange-500/30 transition-colors" />
+            <p className={`text-[15px] font-bold group-hover:translate-x-[-4px] transition-transform ${mode === 'light' ? 'text-black' : 'text-white'}`}>Edge Node NYC-1</p>
+            <div className={`h-0.5 w-full transition-colors ${mode === 'light' ? 'bg-black/5' : 'bg-white/5'} group-hover:bg-orange-500/30`} />
           </motion.div>
           <motion.div initial={{ opacity: 0, x: -30 }} whileInView={{ opacity: 1, x: 0 }} transition={{ delay: 0.4 }} className="space-y-2 group cursor-default">
             <p className="text-[10px] font-black text-slate-600 uppercase tracking-[0.3em] group-hover:text-orange-500 transition-colors">Inference Speed</p>
             <p className="text-[15px] font-bold text-orange-500 group-hover:translate-x-[-4px] transition-transform">42ms Latency</p>
-            <div className="h-0.5 w-full bg-white/5 group-hover:bg-orange-500/30 transition-colors" />
+            <div className={`h-0.5 w-full transition-colors ${mode === 'light' ? 'bg-black/5' : 'bg-white/5'} group-hover:bg-orange-500/30`} />
           </motion.div>
         </div>
 
@@ -290,7 +314,7 @@ function StatsCarousel() {
               transition={{ duration: 0.8, type: "spring", bounce: 0.3 }}
               className="w-full absolute"
             >
-              <Counter {...carouselStats[index]} />
+              <Counter {...carouselStats[index]} mode={mode} />
             </motion.div>
           </AnimatePresence>
         </div>
@@ -300,12 +324,12 @@ function StatsCarousel() {
           <motion.div initial={{ opacity: 0, x: 30 }} whileInView={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }} className="space-y-2 group cursor-default">
             <p className="text-[10px] font-black text-slate-600 uppercase tracking-[0.3em] group-hover:text-orange-500 transition-colors">Reliability</p>
             <p className="text-[15px] font-bold text-orange-500 group-hover:translate-x-[4px] transition-transform">99.98% Service</p>
-            <div className="h-0.5 w-full bg-white/5 group-hover:bg-orange-500/30 transition-colors" />
+            <div className={`h-0.5 w-full transition-colors ${mode === 'light' ? 'bg-black/5' : 'bg-white/5'} group-hover:bg-orange-500/30`} />
           </motion.div>
           <motion.div initial={{ opacity: 0, x: 30 }} whileInView={{ opacity: 1, x: 0 }} transition={{ delay: 0.4 }} className="space-y-2 group cursor-default">
             <p className="text-[10px] font-black text-slate-600 uppercase tracking-[0.3em] group-hover:text-orange-500 transition-colors">Data Source</p>
-            <p className="text-[15px] font-bold text-white group-hover:translate-x-[4px] transition-transform">PostgreSQL NYC</p>
-            <div className="h-0.5 w-full bg-white/5 group-hover:bg-orange-500/30 transition-colors" />
+            <p className={`text-[15px] font-bold group-hover:translate-x-[4px] transition-transform ${mode === 'light' ? 'text-black' : 'text-white'}`}>PostgreSQL NYC</p>
+            <div className={`h-0.5 w-full transition-colors ${mode === 'light' ? 'bg-black/5' : 'bg-white/5'} group-hover:bg-orange-500/30`} />
           </motion.div>
         </div>
       </div>
@@ -331,9 +355,29 @@ export default function Landing() {
   const [activeFeature, setActiveFeature] = useState(null);
   const [contactStatus, setContactStatus] = useState('idle');
   const [form, setForm] = useState({ sender_name: '', sender_email: '', subject: 'Inquiry', message: '' });
+  const [isTitleHovered, setIsTitleHovered] = useState(false);
+  const [mousePos, setMousePos] = useState({ x: -1000, y: -1000 });
+  const { mode, setMode } = useTheme();
 
   const { scrollYProgress } = useScroll();
-  const headerBg = useTransform(scrollYProgress, [0, 0.05], ['rgba(0,0,0,0)', 'rgba(0,0,0,0.8)']);
+  const headerOpacity = useTransform(scrollYProgress, [0, 0.05], [0, 0.85]);
+
+  useEffect(() => {
+    const handle = (e) => setMousePos({ x: e.clientX, y: e.clientY });
+    window.addEventListener('mousemove', handle);
+    return () => window.removeEventListener('mousemove', handle);
+  }, []);
+
+  // Auto-populate form with authenticated user data
+  useEffect(() => {
+    if (user) {
+      setForm(prev => ({
+        ...prev,
+        sender_name: user.name || '',
+        sender_email: user.email || ''
+      }));
+    }
+  }, [user]);
 
   const scrollTo = (id) => { document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' }); setMenuOpen(false); };
 
@@ -348,14 +392,6 @@ export default function Landing() {
     } catch { setContactStatus('error'); setTimeout(() => setContactStatus('idle'), 4000); }
   };
 
-  const [mousePos, setMousePos] = useState({ x: -1000, y: -1000 });
-
-  useEffect(() => {
-    const handle = (e) => setMousePos({ x: e.clientX, y: e.clientY });
-    window.addEventListener('mousemove', handle);
-    return () => window.removeEventListener('mousemove', handle);
-  }, []);
-
   const navItems = [
     { label: 'Features', action: () => scrollTo('features') },
     { label: 'Vision', action: () => scrollTo('vision') },
@@ -363,48 +399,53 @@ export default function Landing() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#030303] text-white overflow-x-hidden selection:bg-orange-500/30">
-      <AnimatePresence>
-        {activeFeature && <FeatureModal feature={activeFeature} onClose={() => setActiveFeature(null)} />}
-      </AnimatePresence>
+    <div className={`min-h-screen font-poppins selection:bg-orange-500/30 transition-colors duration-700 ${
+      mode === 'light' ? 'bg-[#fdf6ef] text-slate-900' : 'bg-[#0a0a0c] text-white'
+    }`}>
+
 
       {/* ── Predictive Intelligence Background ── */}
-      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden bg-[#020202]">
+      <div className={`fixed inset-0 pointer-events-none z-0 overflow-hidden transition-colors duration-700 ${
+        mode === 'light' ? 'bg-[#fdf6ef]' : 'bg-[#08080a]'
+      }`}>
         {/* Layer 1: Static Tech Grid */}
-        <div className="absolute inset-0 opacity-[0.03] bg-[linear-gradient(to_right,#ffffff_1px,transparent_1px),linear-gradient(to_bottom,#ffffff_1px,transparent_1px)] bg-[size:80px_80px]" />
+        <div className={`absolute inset-0 opacity-[0.08] bg-[linear-gradient(to_right,#808080_1px,transparent_1px),linear-gradient(to_bottom,#808080_1px,transparent_1px)] bg-[size:80px_80px]`} />
         
         {/* Layer 2: Reactive Dot Matrix */}
-        <div className="absolute inset-0 opacity-[0.1] bg-[radial-gradient(#ffffff_1px,transparent_1px)] bg-[size:32px_32px]" />
+        <div className={`absolute inset-0 opacity-[0.1] bg-[radial-gradient(#808080_1px,transparent_1px)] bg-[size:32px_32px]`} />
 
         {/* Layer 3: Mouse Spotlight Reveal */}
         <div 
           className="absolute inset-0 opacity-100 transition-opacity duration-500 ease-out" 
           style={{ 
-            background: `radial-gradient(600px circle at ${mousePos.x}px ${mousePos.y}px, rgba(249,115,22,0.18), rgba(249,115,22,0.05) 40%, transparent 80%)`
+            background: mode === 'dark' 
+              ? `radial-gradient(600px circle at ${mousePos.x}px ${mousePos.y}px, rgba(249,115,22,0.18), rgba(249,115,22,0.05) 40%, transparent 80%)`
+              : `radial-gradient(600px circle at ${mousePos.x}px ${mousePos.y}px, rgba(249,115,22,0.12), rgba(249,115,22,0.03) 40%, transparent 80%)`
           }} 
         />
 
-        {/* Layer 4: Floating Data Particles */}
-        <div className="absolute inset-0">
-          {[...Array(12)].map((_, i) => (
+        {/* Layer 4: Floating Data Particles (Optimized) */}
+        <div className="absolute inset-0 pointer-events-none">
+          {[...Array(6)].map((_, i) => (
             <motion.div
               key={i}
-              className="absolute w-1 h-1 bg-orange-500/20 rounded-full"
+              className="absolute w-1 h-1 bg-orange-500/10 rounded-full"
               initial={{ x: Math.random() * 100 + "%", y: Math.random() * 100 + "%" }}
               animate={{ 
                 x: [null, (Math.random() * 100) + "%"],
                 y: [null, (Math.random() * 100) + "%"],
-                opacity: [0.1, 0.4, 0.1]
+                opacity: [0.1, 0.3, 0.1]
               }}
               transition={{ 
-                duration: 20 + Math.random() * 20, 
+                duration: 25 + Math.random() * 25, 
                 repeat: Infinity, 
                 ease: "linear" 
               }}
               style={{
-                filter: 'blur(1px)',
+                filter: 'blur(2px)',
                 left: (Math.random() * 100) + "%",
-                top: (Math.random() * 100) + "%"
+                top: (Math.random() * 100) + "%",
+                willChange: 'transform'
               }}
             />
           ))}
@@ -412,22 +453,54 @@ export default function Landing() {
       </div>
 
       {/* ── Nav ── */}
-      <motion.nav style={{ backgroundColor: headerBg }} className="fixed top-0 w-full z-[100] backdrop-blur-3xl border-b border-white/[0.08] px-6 md:px-16 py-4 flex items-center justify-between">
+      <motion.nav 
+        style={{ opacity: 1 }}
+        className={`fixed top-0 w-full z-[100] backdrop-blur-3xl border-b transition-colors duration-500 px-6 md:px-16 py-4 flex items-center justify-between ${
+          mode === 'light' ? 'border-black/[0.05] bg-white/80' : 'border-white/[0.08] bg-[#0a0a0c]/80'
+        }`}
+      >
         <div onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="flex items-center gap-3 cursor-pointer group">
           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500 to-amber-500 flex items-center justify-center shadow-lg shadow-orange-500/20 group-hover:rotate-12 transition-transform">
             <Activity size={20} className="text-black" />
           </div>
-          <span className="text-lg font-black tracking-tight uppercase italic hidden sm:block">DemandSight</span>
+          <span className={`text-lg font-black tracking-tight uppercase hidden sm:block ${mode === 'light' ? 'text-black' : 'text-white'}`}>DemandSight</span>
         </div>
         <div className="hidden md:flex items-center gap-8">
           {navItems.map(n => (
-            <button key={n.label} onClick={n.action} className="text-[10px] font-bold text-slate-300 uppercase tracking-widest hover:text-orange-500 transition-colors">{n.label}</button>
+            <button key={n.label} onClick={n.action} className={`text-[13px] font-bold uppercase tracking-widest transition-colors ${
+              mode === 'light' ? 'text-slate-600 hover:text-orange-600' : 'text-slate-300 hover:text-orange-500'
+            }`}>{n.label}</button>
           ))}
 
-          <Link to={user ? '/dashboard' : '/login'}
-            className="px-7 py-2 rounded-full bg-white text-black text-[10px] font-black uppercase tracking-widest hover:bg-orange-500 transition-all active:scale-95 shadow-lg">
-            {user ? 'Dashboard' : 'Sign In'}
-          </Link>
+          <div className="flex items-center gap-4">
+            <Link to={user ? '/dashboard' : '/login'}
+              className="px-8 py-2.5 rounded-full bg-orange-500 text-white text-[11px] font-black uppercase tracking-widest hover:brightness-110 shadow-lg font-poppins transition-all active:scale-95">
+              {user ? 'ML Intelligence' : 'Sign In'}
+            </Link>
+            
+            {user && (
+              <div className="flex items-center gap-2">
+                <button 
+                  onClick={() => navigate('/profile')}
+                  className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all border ${
+                    mode === 'light' ? 'bg-black/5 border-black/10 text-slate-600 hover:bg-black/10' : 'bg-white/5 border-white/10 text-slate-300 hover:bg-white/10'
+                  }`}
+                  title="Profile"
+                >
+                  <User size={18} />
+                </button>
+                <button 
+                  onClick={() => navigate('/settings')}
+                  className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all border ${
+                    mode === 'light' ? 'bg-black/5 border-black/10 text-slate-600 hover:bg-black/10' : 'bg-white/5 border-white/10 text-slate-300 hover:bg-white/10'
+                  }`}
+                  title="Settings"
+                >
+                  <Settings size={18} />
+                </button>
+              </div>
+            )}
+          </div>
         </div>
         <button className="md:hidden" onClick={() => setMenuOpen(!menuOpen)}>{menuOpen ? <X size={24} /> : <Menu size={24} />}</button>
       </motion.nav>
@@ -437,9 +510,11 @@ export default function Landing() {
         {menuOpen && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             className="fixed inset-0 z-[90] bg-black/95 backdrop-blur-3xl flex flex-col items-center justify-center gap-10">
-            {navItems.map(n => <button key={n.label} onClick={n.action} className="text-4xl font-black uppercase italic tracking-tight hover:text-orange-500 transition-colors">{n.label}</button>)}
+            {navItems.map(n => <button key={n.label} onClick={n.action} className="text-4xl font-black uppercase tracking-tight hover:text-orange-500 transition-colors">{n.label}</button>)}
 
-            <Link to="/login" onClick={() => setMenuOpen(false)} className="text-2xl font-black text-orange-500 underline underline-offset-8 uppercase italic">Sign In</Link>
+            <Link to={user ? '/dashboard' : '/login'} onClick={() => setMenuOpen(false)} className="text-2xl font-black text-white underline underline-offset-8 uppercase font-poppins">
+              {user ? 'ML Engine' : 'Sign In'}
+            </Link>
           </motion.div>
         )}
       </AnimatePresence>
@@ -450,30 +525,31 @@ export default function Landing() {
         <section className="relative min-h-screen flex items-center justify-center px-6 pt-32 pb-20 overflow-hidden">
           <div className="max-w-5xl mx-auto text-center space-y-10 relative z-10">
             <motion.div
-              style={{
-                rotateX: (mousePos.y / 50) - 10,
-                rotateY: (mousePos.x / -100) + 10,
-              }}
-              transition={{ type: "spring", stiffness: 100, damping: 30 }}
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2, duration: 1 }}
             >
-              <motion.h1 initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
-                className="text-6xl sm:text-7xl lg:text-8xl font-black leading-[0.85] tracking-tight italic uppercase drop-shadow-2xl">
+              <h1 className={`text-6xl sm:text-7xl lg:text-8xl font-black leading-[0.85] tracking-tight uppercase drop-shadow-2xl transition-colors duration-500 ${
+                  mode === 'light' ? 'text-black' : 'text-white'
+                }`}>
                 PREDICT<br />
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-400 via-orange-500 to-amber-500">DEMAND.</span>
-              </motion.h1>
+              </h1>
             </motion.div>
 
             <motion.p initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}
-              className="text-slate-500 text-lg max-w-2xl mx-auto leading-relaxed font-poppins">
+              className={`text-lg max-w-2xl mx-auto leading-relaxed font-poppins transition-colors duration-500 ${
+                mode === 'light' ? 'text-slate-600' : 'text-slate-500'
+              }`}>
               SARIMAX-powered geospatial intelligence for NYC mobility. Transform raw trip data into predictive fleet earnings across 263 taxi zones.
             </motion.p>
 
             <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.6 }}
               className="flex justify-center">
               <MagneticButton>
-                <Link to="/register?role=operator"
-                  className="px-12 py-5 bg-orange-500 text-black font-black rounded-2xl uppercase text-[11px] tracking-widest hover:bg-white transition-all shadow-[0_20px_50px_rgba(249,115,22,0.3)] active:scale-95 flex items-center gap-3">
-                  Start Free <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
+                <Link to={user ? '/dashboard' : '/register?role=operator'}
+                  className="px-14 py-6 bg-orange-500 text-white font-black rounded-2xl uppercase text-[15px] tracking-[0.2em] hover:bg-neutral-800 transition-all shadow-[0_20px_50px_rgba(249,115,22,0.3)] active:scale-95 flex items-center gap-3 font-poppins">
+                  {user ? 'Launch ML Engine' : 'Start Free'} <ArrowRight size={22} className="group-hover:translate-x-1 transition-transform" />
                 </Link>
               </MagneticButton>
             </motion.div>
@@ -502,7 +578,9 @@ export default function Landing() {
         </section>
 
         {/* ── Marquee ── */}
-        <div className="border-y border-white/[0.08] py-8 overflow-hidden bg-black/60 backdrop-blur-xl">
+        <div className={`border-y py-8 overflow-hidden transition-colors duration-500 ${
+          mode === 'light' ? 'border-black/[0.05] bg-white/60' : 'border-white/[0.08] bg-black/60'
+        } backdrop-blur-xl`}>
           <div className="flex animate-[marquee_45s_linear_infinite] whitespace-nowrap gap-16 text-[12px] font-black uppercase tracking-[0.2em] text-slate-400">
             {['SARIMAX Engine', 'NYC Geospatial', 'Surge Detection', 'Fleet Routing', '263 Zones', 'Real-Time Maps'].map((t, i) => (
               <span key={`a-${i}`} className="flex items-center gap-6">{t}<span className="w-1.5 h-1.5 rounded-full bg-orange-500/30" /></span>
@@ -517,12 +595,12 @@ export default function Landing() {
           <div className="max-w-7xl mx-auto">
             <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} className="text-center mb-20 space-y-4">
               <div className="text-[10px] font-bold text-orange-500 uppercase tracking-widest">Core Capabilities</div>
-              <h2 className="text-5xl sm:text-7xl font-black italic tracking-normal uppercase">Built for<br /><span className="text-orange-500">Operators.</span></h2>
+              <h2 className="text-5xl sm:text-7xl font-black tracking-normal uppercase">Built for<br /><span className="text-orange-500">Operators.</span></h2>
               <p className="text-slate-600 text-sm max-w-md mx-auto">Click any card to see the full breakdown</p>
             </motion.div>
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-8">
               {features.map((f, i) => (
-                <FeatureCard key={i} feature={f} delay={f.delay} onClick={() => setActiveFeature(f)} />
+                <FeatureCard key={i} feature={f} delay={f.delay} mode={mode} onClick={() => setActiveFeature(f)} />
               ))}
             </div>
           </div>
@@ -533,29 +611,39 @@ export default function Landing() {
           <div className="max-w-7xl mx-auto flex flex-col items-center">
             <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center mb-12">
               <div className="text-[10px] font-bold text-orange-500 uppercase tracking-widest mb-3">Live Performance</div>
-              <h2 className="text-4xl sm:text-6xl font-black italic uppercase italic tracking-tight text-white line-height-[0.9]">
+              <h2 className={`text-4xl sm:text-6xl font-black uppercase tracking-tight line-height-[0.9] transition-colors duration-500 ${
+                mode === 'light' ? 'text-black' : 'text-white'
+              }`}>
                 SYSTEM <span className="text-orange-500">BENCHMARKS.</span>
               </h2>
             </motion.div>
-            <StatsCarousel />
+            <StatsCarousel mode={mode} />
           </div>
         </section>
 
         {/* ══════════ VISION ══════════ */}
         <section id="vision" className="relative py-24 sm:py-32 overflow-hidden scroll-mt-24">
-          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-orange-950/10 to-transparent" />
+          <div className={`absolute inset-0 bg-gradient-to-b from-transparent to-transparent ${
+            mode === 'light' ? 'via-orange-500/5' : 'via-orange-950/10'
+          }`} />
           <div className="relative max-w-4xl mx-auto px-6 text-center space-y-10">
             <motion.div initial={{ opacity: 0, scale: 0.95 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ duration: 1 }}>
-              <h2 className="text-5xl sm:text-7xl lg:text-8xl font-black text-white uppercase italic tracking-tight leading-[0.85]">
+              <h2 className={`text-5xl sm:text-7xl lg:text-8xl font-black uppercase tracking-tight leading-[0.85] transition-colors duration-500 ${
+                mode === 'light' ? 'text-black' : 'text-white'
+              }`}>
                 THE CITY<br />NEVER <span className="text-orange-500">STOPS.</span>
               </h2>
               <div className="w-20 h-1 bg-orange-500 mx-auto my-10 rounded-full" />
-              <p className="text-lg text-slate-500 max-w-lg mx-auto leading-relaxed">
+              <p className={`text-lg max-w-lg mx-auto leading-relaxed transition-colors duration-500 ${
+                mode === 'light' ? 'text-slate-600' : 'text-slate-500'
+              }`}>
                 While others react, DemandSight operators anticipate. Our SARIMAX models see the surge 3 hours before it arrives.
               </p>
               <div className="pt-10 flex justify-center gap-5">
                 <button onClick={() => navigate('/docs')}
-                  className="px-10 py-4 border border-white/10 text-white font-black uppercase text-xs tracking-widest hover:bg-white hover:text-black transition-all rounded-2xl">
+                  className={`px-12 py-5 border transition-all rounded-2xl font-poppins font-black uppercase text-sm tracking-[0.2em] ${
+                    mode === 'light' ? 'border-black/10 text-black hover:bg-black hover:text-white' : 'border-white/20 text-white hover:bg-white hover:text-black'
+                  }`}>
                   Read the Docs
                 </button>
               </div>
@@ -565,16 +653,20 @@ export default function Landing() {
 
         {/* ══════════ CONTACT ══════════ */}
         <section id="contact" className="py-20 sm:py-24 px-6 md:px-16 scroll-mt-24">
-          <div className="max-w-6xl mx-auto grid lg:grid-cols-2 gap-20 items-start">
+          <div className="max-w-6xl mx-auto grid lg:grid-cols-2 gap-20 items-center">
             {/* Left */}
             <div className="space-y-10 lg:sticky lg:top-32">
               <motion.div initial={{ opacity: 0, x: -30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }}>
                 <div className="text-[10px] font-bold text-orange-500 uppercase tracking-widest mb-4">Get In Touch</div>
-                <h2 className="text-4xl sm:text-6xl font-black italic tracking-tight uppercase leading-[0.85]">
+                <h2 className={`text-4xl sm:text-6xl font-black tracking-tight uppercase leading-[0.85] transition-colors duration-500 ${
+                  mode === 'light' ? 'text-black' : 'text-white'
+                }`}>
                   LET'S<br /><span className="text-orange-500">CONNECT.</span>
                 </h2>
               </motion.div>
-              <p className="text-lg text-slate-500 leading-relaxed max-w-md">
+              <p className={`text-lg leading-relaxed max-w-md transition-colors duration-500 ${
+                mode === 'light' ? 'text-slate-600' : 'text-slate-500'
+              }`}>
                 Whether you're an independent driver or managing a fleet of 500+ vehicles, our team is ready to help you deploy predictive intelligence.
               </p>
               <div className="space-y-6">
@@ -582,14 +674,18 @@ export default function Landing() {
                   <div className="w-14 h-14 rounded-2xl bg-orange-500 flex items-center justify-center text-black"><Mail size={22} /></div>
                   <div>
                     <div className="text-[10px] font-bold text-slate-600 uppercase tracking-wider mb-1">Email</div>
-                    <div className="text-white font-bold">support@demandsight.ai</div>
+                    <div className={`font-bold transition-colors ${mode === 'light' ? 'text-black' : 'text-white'}`}>support@demandsight.ai</div>
                   </div>
                 </div>
                 <div className="flex items-center gap-6">
-                  <div className="w-14 h-14 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-orange-500"><Terminal size={22} /></div>
+                  <div className={`w-14 h-14 rounded-2xl border flex items-center justify-center text-orange-500 ${
+                    mode === 'light' ? 'bg-black/5 border-black/10' : 'bg-white/5 border-white/10'
+                  }`}><Terminal size={22} /></div>
                   <div>
                     <div className="text-[10px] font-bold text-slate-600 uppercase tracking-wider mb-1">Repository</div>
-                    <a href="https://github.com/SachinYadav2446/Taxi-Demand-Forecasting-System-" target="_blank" rel="noopener noreferrer" className="text-white font-bold hover:text-orange-500 transition-colors">SachinYadav2446</a>
+                    <a href="https://github.com/SachinYadav2446/Taxi-Demand-Forecasting-System-" target="_blank" rel="noopener noreferrer" className={`font-bold hover:text-orange-500 transition-colors ${
+                      mode === 'light' ? 'text-black' : 'text-white'
+                    }`}>SachinYadav2446</a>
                   </div>
                 </div>
               </div>
@@ -597,39 +693,78 @@ export default function Landing() {
 
             {/* Right — Form */}
             <motion.div initial={{ opacity: 0, x: 30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }}
-              className="bg-white/[0.015] border border-white/[0.04] backdrop-blur-xl p-10 sm:p-14 rounded-[3rem]">
-              {contactStatus === 'success' ? (
+              className={`border backdrop-blur-xl p-8 sm:p-10 rounded-[3rem] max-w-lg w-full lg:ml-auto transition-colors duration-500 ${
+                mode === 'light' ? 'bg-white border-slate-200 shadow-xl' : 'bg-white/[0.015] border-white/[0.04]'
+              }`}>
+              {!user ? (
+                <div className="text-center py-8 space-y-10 animate-in fade-in zoom-in-95 duration-1000">
+                  <div className="w-20 h-20 rounded-[2rem] bg-orange-500/5 border border-orange-500/20 flex items-center justify-center mx-auto text-orange-500 shadow-[0_0_50px_rgba(249,115,22,0.1)]">
+                    <Lock size={40} className="animate-pulse" />
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <h3 className={`text-4xl font-black uppercase tracking-tight leading-tight ${mode === 'light' ? 'text-black' : 'text-white'}`}>COMMUNICATION<br /><span className="text-orange-500">SECURED.</span></h3>
+                    <p className="text-slate-500 text-xs max-w-xs mx-auto font-medium transition-colors">Verify your identity to unlock the direct operational enquiry desk and secure messaging.</p>
+                  </div>
+
+                  <div className="bg-white/[0.03] border border-white/[0.08] backdrop-blur-md rounded-[2rem] p-6 grid grid-cols-2 gap-4 shadow-inner">
+                    {[
+                      { icon: <MessageSquare size={14} />, text: 'Direct Support' },
+                      { icon: <Shield size={14} />, text: 'Secure Tunnel' },
+                      { icon: <Send size={14} />, text: 'Fast Response' },
+                      { icon: <Activity size={14} />, text: 'Real-time Chat' }
+                    ].map((b, i) => (
+                      <div key={i} className="flex items-center gap-3 text-[10px] font-black text-slate-400 uppercase tracking-widest bg-white/[0.02] border border-white/[0.04] p-3 rounded-xl">
+                        <span className="text-orange-500">{b.icon}</span> {b.text}
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="pt-2 flex flex-col items-center gap-6">
+                    <Link to="/login" className="px-12 py-5 bg-orange-600 text-white font-black rounded-2xl uppercase text-sm tracking-[0.2em] hover:brightness-110 transition-all shadow-[0_15px_40px_rgba(249,115,22,0.3)] font-poppins min-w-[240px] active:scale-95">
+                      Sign In Now
+                    </Link>
+                    <div className="flex items-center gap-3 text-[10px] font-black text-slate-700 uppercase tracking-[0.4em]">
+                      <div className={`w-10 h-[1px] ${mode === 'light' ? 'bg-black/10' : 'bg-white/[0.08]'}`} />
+                      Protected Portal
+                      <div className={`w-10 h-[1px] ${mode === 'light' ? 'bg-black/10' : 'bg-white/[0.08]'}`} />
+                    </div>
+                  </div>
+                </div>
+              ) : contactStatus === 'success' ? (
                 <div className="text-center py-20 space-y-6">
                   <div className="w-20 h-20 rounded-full bg-green-500/10 border border-green-500/20 flex items-center justify-center mx-auto">
                     <CheckCircle2 size={40} className="text-green-500" />
                   </div>
-                  <h3 className="text-3xl font-black italic uppercase tracking-tight">Message Sent!</h3>
+                  <h3 className="text-3xl font-black uppercase tracking-tight">Message Sent!</h3>
                   <p className="text-slate-500">We'll respond within 24 hours.</p>
                 </div>
               ) : (
                 <form onSubmit={submitContact} className="space-y-8">
-                  <h3 className="text-2xl font-black italic uppercase tracking-tight mb-2">Send a Message</h3>
+                  <h3 className={`text-2xl font-black uppercase tracking-tight mb-2 transition-colors ${mode === 'light' ? 'text-black' : 'text-white'}`}>Send a Message</h3>
                   <div className="grid sm:grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-bold text-slate-600 uppercase tracking-wider">Name</label>
-                      <input required type="text" value={form.sender_name} onChange={e => setForm({ ...form, sender_name: e.target.value })}
-                        placeholder="Your name" className="w-full bg-white/[0.03] border border-white/[0.06] rounded-xl px-5 py-4 text-sm text-white placeholder:text-slate-700 focus:border-orange-500/40 outline-none transition-colors" />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-bold text-slate-600 uppercase tracking-wider">Email</label>
-                      <input required type="email" value={form.sender_email} onChange={e => setForm({ ...form, sender_email: e.target.value })}
-                        placeholder="you@company.com" className="w-full bg-white/[0.03] border border-white/[0.06] rounded-xl px-5 py-4 text-sm text-white placeholder:text-slate-700 focus:border-orange-500/40 outline-none transition-colors" />
-                    </div>
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-bold text-slate-600 uppercase tracking-wider">Name</label>
+                        <input readOnly type="text" value={form.sender_name} 
+                          className="w-full bg-white/[0.015] border border-white/[0.04] rounded-xl px-5 py-4 text-sm text-slate-400 cursor-not-allowed outline-none font-poppins" />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-bold text-slate-600 uppercase tracking-wider">Email</label>
+                        <input readOnly type="email" value={form.sender_email} 
+                          className="w-full bg-white/[0.015] border border-white/[0.04] rounded-xl px-5 py-4 text-sm text-slate-400 cursor-not-allowed outline-none font-poppins" />
+                      </div>
                   </div>
                   <div className="space-y-2">
                     <label className="text-[10px] font-bold text-slate-600 uppercase tracking-wider">Message</label>
                     <textarea required rows={5} value={form.message} onChange={e => setForm({ ...form, message: e.target.value })}
-                      placeholder="Tell us about your fleet..." className="w-full bg-white/[0.03] border border-white/[0.06] rounded-xl px-5 py-4 text-sm text-white placeholder:text-slate-700 focus:border-orange-500/40 outline-none transition-colors resize-none" />
+                      placeholder="Tell us about your fleet..." className={`w-full border rounded-xl px-5 py-4 text-sm outline-none transition-colors resize-none ${
+                        mode === 'light' ? 'bg-slate-50 border-slate-200 text-black placeholder:text-slate-400' : 'bg-white/[0.03] border-white/[0.06] text-white placeholder:text-slate-700'
+                      } focus:border-orange-500/40`} />
                   </div>
                   <button disabled={contactStatus === 'sending'}
-                    className="w-full py-5 bg-orange-500 text-black font-black uppercase text-xs tracking-widest rounded-xl flex items-center justify-center gap-3 hover:bg-white transition-all active:scale-[0.98] disabled:opacity-50">
+                    className="w-full py-6 bg-orange-600 text-white font-black uppercase text-[13px] tracking-[0.2em] rounded-xl flex items-center justify-center gap-3 hover:bg-neutral-800 transition-all active:scale-[0.98] disabled:opacity-50 font-poppins">
                     {contactStatus === 'sending' ? 'Sending...' : 'Send Message'}
-                    <Send size={16} />
+                    <Send size={18} />
                   </button>
                   {contactStatus === 'error' && <p className="text-red-400 text-xs text-center">Something went wrong. Please try again.</p>}
                 </form>
@@ -638,43 +773,60 @@ export default function Landing() {
           </div>
         </section>
 
-        <section className="py-24 sm:py-32 px-6 bg-gradient-to-t from-black via-transparent to-transparent">
+        <section className={`py-24 sm:py-32 px-6 transition-colors duration-500 ${
+          mode === 'light' ? 'bg-gradient-to-t from-orange-50/50 to-transparent' : 'bg-gradient-to-t from-black via-transparent to-transparent'
+        }`}>
           <div className="max-w-4xl mx-auto text-center space-y-10">
-            <h2 className="text-4xl sm:text-7xl font-black text-white italic tracking-tight uppercase leading-[0.85]">
+            <h2 className={`text-4xl sm:text-7xl font-black tracking-tight uppercase leading-[0.85] transition-colors duration-500 ${
+              mode === 'light' ? 'text-black' : 'text-white'
+            }`}>
               READY TO<br /><span className="text-orange-500">SCALE?</span>
             </h2>
-            <p className="text-lg text-slate-500 max-w-lg mx-auto">Join operators leveraging the SARIMAX forecasting engine for smarter fleet decisions.</p>
-            <div className="flex flex-wrap justify-center gap-5">
-              <Link to="/register" className="px-10 py-4 bg-white text-black font-black rounded-2xl uppercase text-xs tracking-widest hover:bg-orange-500 transition-all">Start Free</Link>
-              <button onClick={() => navigate('/docs')} className="px-10 py-4 border border-white/10 text-white font-black rounded-2xl uppercase text-xs tracking-widest hover:bg-white/5 transition-all">Documentation</button>
+            <p className={`text-lg max-w-lg mx-auto transition-colors duration-500 ${
+              mode === 'light' ? 'text-slate-600' : 'text-slate-500'
+            }`}>Join operators leveraging the SARIMAX forecasting engine for smarter fleet decisions.</p>
+            <div className="flex flex-wrap justify-center gap-6">
+              <Link to={user ? '/dashboard' : '/register'} className="px-12 py-5 bg-orange-500 text-white font-black rounded-2xl uppercase text-[13px] tracking-[0.2em] hover:bg-neutral-800 transition-all font-poppins shadow-xl shadow-orange-500/20">
+                {user ? 'Access Intelligence' : 'Start Free'}
+              </Link>
+              <button onClick={() => navigate('/docs')} className={`px-12 py-5 border font-black rounded-2xl uppercase text-[13px] tracking-[0.2em] transition-all font-poppins ${
+                mode === 'light' ? 'border-black/10 text-black hover:bg-black hover:text-white' : 'border-white/20 text-white hover:bg-white hover:text-black'
+              }`}>Documentation</button>
             </div>
           </div>
         </section>
 
         {/* ══════════ FOOTER ══════════ */}
-        <footer className="py-12 px-6 md:px-16 bg-black border-t border-white/[0.04]">
+        <footer className={`py-12 px-6 md:px-16 border-t transition-colors duration-500 ${
+          mode === 'light' ? 'bg-white border-slate-100' : 'bg-black border-white/[0.04]'
+        }`}>
           <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
-            <div className="flex items-center gap-3">
+            <div className={`flex items-center gap-3 ${mode === 'light' ? 'text-black' : 'text-white'}`}>
               <div className="w-8 h-8 rounded-lg bg-orange-500 flex items-center justify-center"><Activity size={14} className="text-black" /></div>
-              <span className="font-black uppercase tracking-tight italic text-sm">DemandSight</span>
+              <span className="font-black uppercase tracking-tight text-sm">DemandSight</span>
             </div>
 
             <div className="flex items-center gap-8">
               <button onClick={() => scrollTo('features')} className="text-[10px] font-bold text-slate-500 uppercase tracking-wider hover:text-orange-500 transition-colors">Features</button>
               <Link to="/docs" className="text-[10px] font-bold text-slate-500 uppercase tracking-wider hover:text-orange-500 transition-colors">Docs</Link>
               <button onClick={() => scrollTo('contact')} className="text-[10px] font-bold text-slate-500 uppercase tracking-wider hover:text-orange-500 transition-colors">Contact</button>
-              <a href="https://github.com/SachinYadav2446/Taxi-Demand-Forecasting-System-" target="_blank" rel="noopener noreferrer" className="text-[10px] font-bold text-slate-500 uppercase tracking-wider hover:text-white transition-colors">Source</a>
+              <a href="https://github.com/SachinYadav2446/Taxi-Demand-Forecasting-System-" target="_blank" rel="noopener noreferrer" className={`text-[10px] font-bold uppercase tracking-wider transition-colors ${
+                mode === 'light' ? 'text-slate-500 hover:text-black' : 'text-slate-500 hover:text-white'
+              }`}>Source</a>
             </div>
 
             <div className="flex items-center gap-6">
-              <div className="flex items-center gap-2 text-[10px] font-bold text-green-600/60 uppercase tracking-wider">
+              <div className={`flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider ${mode === 'light' ? 'text-green-600' : 'text-green-600/60'}`}>
                 <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" /> Operational
               </div>
-              <p className="text-[10px] font-bold text-slate-800 uppercase tracking-wider">© 2026</p>
+              <p className={`text-[10px] font-bold uppercase tracking-wider ${mode === 'light' ? 'text-slate-400' : 'text-slate-800'}`}>© 2026</p>
             </div>
           </div>
         </footer>
       </main>
+      <AnimatePresence>
+        {activeFeature && <FeatureModal feature={activeFeature} mode={mode} onClose={() => setActiveFeature(null)} />}
+      </AnimatePresence>
     </div>
   );
 }
