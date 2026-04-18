@@ -148,7 +148,7 @@ function ResourceModal({ data, onClose }) {
         {/* Modal Header */}
         <div className="sticky top-0 bg-[#0d0d0d]/95 backdrop-blur-sm border-b border-[#1a1a1a] px-6 py-5 flex items-center justify-between z-10">
           <div className="flex items-center gap-3">
-            <span className="text-[10px] font-black text-orange-500 uppercase tracking-[0.2em] bg-orange-500/10 border border-orange-500/20 px-2.5 py-1 rounded-lg">{data.tag}</span>
+            <span className="text-[10px] font-black text-orange-500 uppercase tracking-wider bg-orange-500/10 border border-orange-500/20 px-2.5 py-1 rounded-lg">{data.tag}</span>
             <h2 className="text-lg font-black text-white">{data.title}</h2>
           </div>
           <button onClick={onClose} className="p-2 rounded-xl text-slate-500 hover:text-white hover:bg-[#1f1f1f] transition-all">
@@ -272,7 +272,7 @@ export default function OperatorSupport() {
 
       {/* ── Bento Resource Grid ── */}
       <div>
-        <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] mb-4">Quick Resources</p>
+        <p className="text-[10px] font-black text-slate-500 uppercase tracking-wider mb-4">Quick Resources</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {CARDS.map(card => (
             <button
@@ -395,7 +395,7 @@ export default function OperatorSupport() {
 
           {/* Direct Contact */}
           <div className="rounded-3xl border border-[#222] bg-[#0a0a0a] p-6">
-            <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-4">Direct Lines</p>
+            <p className="text-[10px] font-black text-slate-500 uppercase tracking-wider mb-4">Direct Lines</p>
             <div className="space-y-3">
               <a href="mailto:demandsightsupport@gmail.com" className="flex items-center gap-3 p-3 rounded-2xl bg-[#111] border border-[#1f1f1f] hover:border-orange-500/20 hover:bg-[#151515] transition-all group">
                 <div className="w-9 h-9 rounded-xl bg-orange-500/10 flex items-center justify-center text-orange-500 group-hover:scale-105 transition-transform">

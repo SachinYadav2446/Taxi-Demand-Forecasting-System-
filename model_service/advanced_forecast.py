@@ -40,7 +40,7 @@ class TaxiDemandForecaster:
         self.metrics = {}
         self.is_trained = False
         self.differencing_order = 0
-        self.exog_vars = ['profile_mean', 'precipitation_severity']  # Added weather factor
+        self.exog_vars = ['profile_mean', 'real_precipitation']  # Switching from simulation to real data
         self.demand_profiles = {}
         
     def _create_features(self, df: pd.DataFrame) -> pd.DataFrame:
@@ -62,9 +62,13 @@ class TaxiDemandForecaster:
         else:
             df['profile_mean'] = 0.0
             
-        # Add deterministic exogenous weather feature (precipitation_severity) for the SARIMAX model to ingest
-        day_of_year = df.index.dayofyear
-        df['precipitation_severity'] = np.clip(np.sin(day_of_year / 365.25 * 2 * np.pi) * 0.5 + 0.3, 0, 1)
+        # Real Weather Integration
+        # If 'precipitation' column exists in the input series/dataframe, use it.
+        # Otherwise, we default to 0 (baseline) to avoid model failure.
+        if 'precipitation' in df.columns:
+            df['real_precipitation'] = df['precipitation'].fillna(0)
+        else:
+            df['real_precipitation'] = 0.0
             
         return df
     
@@ -243,9 +247,11 @@ class TaxiDemandForecaster:
         else:
             future_df['profile_mean'] = 0.0
             
-        # Sync the forecasting window's weather severity
-        future_day_of_year = future_df.index.dayofyear
-        future_df['precipitation_severity'] = np.clip(np.sin(future_day_of_year / 365.25 * 2 * np.pi) * 0.5 + 0.3, 0, 1)
+        # Real Weather Integration for the forecasting window
+        if 'precipitation' in future_df.columns:
+            future_df['real_precipitation'] = future_df['precipitation'].fillna(0)
+        else:
+            future_df['real_precipitation'] = 0.0
         
         # Predict all steps at once since exog vars are independent calendar features
         X_future = future_df[self.exog_vars]
