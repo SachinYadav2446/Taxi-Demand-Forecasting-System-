@@ -40,7 +40,7 @@ export default function FleetAllocation({ fleetSize, hotspots }) {
            <Navigation size={20} />
         </div>
         <div>
-          <p className="text-orange-400 text-xs font-bold uppercase tracking-[0.2em]">Operational AI</p>
+          <p className="text-orange-400 text-xs font-bold uppercase tracking-wider">Operational AI</p>
           <h3 className="text-white font-extrabold text-xl">Fleet Deployment Targets</h3>
         </div>
       </div>

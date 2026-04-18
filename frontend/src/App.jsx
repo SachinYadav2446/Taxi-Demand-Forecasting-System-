@@ -10,6 +10,9 @@ import SettingsPage from './pages/Settings';
 import OperatorSupport from './pages/OperatorSupport';
 
 import Landing from './pages/Landing';
+import Privacy from './pages/Privacy';
+import Docs from './pages/Docs';
+import About from './pages/About';
 
 function ProtectedRoute({ children, requireOperator }) {
   const { user } = useAuth();
@@ -30,6 +33,9 @@ export default function App() {
         <Route path="/register" element={user ? <Navigate to="/dashboard" /> : <Register />} />
         
         <Route path="/" element={user ? <Navigate to="/dashboard" /> : <Landing />} />
+        <Route path="/privacy" element={<Privacy />} />
+        <Route path="/docs" element={<Docs />} />
+        <Route path="/about" element={<About />} />
         <Route element={<Layout />}>
           <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
           <Route path="/forecast" element={<ProtectedRoute><DemandForecast /></ProtectedRoute>} />

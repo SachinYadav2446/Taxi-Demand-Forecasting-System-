@@ -3,7 +3,6 @@ import { useOutletContext, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { api } from '../lib/axios';
 import { Building2, Mail, MapPin, ShieldCheck, UserRound, Users, Settings2, X, Loader2, AlertTriangle, Car, Activity, Calendar, ChevronRight, TrendingUp, Zap, Star } from 'lucide-react';
-import CityHeatmap from '../components/CityHeatmap';
 import FleetAllocation from '../components/FleetAllocation';
 import SmartDispatch from '../components/SmartDispatch';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
@@ -43,7 +42,7 @@ function EditProfileModal({ user, onClose }) {
           <div className="p-8">
             <div className="flex items-center justify-between mb-8">
               <div>
-                <p className="text-orange-500 text-[10px] font-black uppercase tracking-[0.2em] mb-1">Account Management</p>
+                <p className="text-orange-500 text-[10px] font-black uppercase tracking-wider mb-1">Account Management</p>
                 <h3 className="text-2xl font-black text-white">Configure Profile</h3>
               </div>
               <button 
@@ -165,10 +164,17 @@ export default function Dashboard() {
   useEffect(() => {
     const checkHealth = async () => {
       try {
-        await api.get('/');
-        setHealth({ api: 'online', model: 'online' });
+        const [hRes, wRes] = await Promise.all([
+          api.get('/'),
+          api.get('/intelligence/weather')
+        ]);
+        setHealth({ 
+          api: 'online', 
+          model: 'online',
+          intelligence: wRes.data ? 'synced' : 'error'
+        });
       } catch (err) {
-        setHealth({ api: 'offline', model: 'offline' });
+        setHealth({ api: 'offline', model: 'offline', intelligence: 'disconnected' });
       }
     };
     
@@ -398,6 +404,10 @@ export default function Dashboard() {
                       <div className={`w-1.5 h-1.5 rounded-full ${health.model === 'online' ? 'bg-orange-500' : 'bg-red-500'}`} />
                       <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">SARIMAX: Active</span>
                     </div>
+                    <div className="flex items-center gap-1.5">
+                      <div className={`w-1.5 h-1.5 rounded-full ${health.intelligence === 'synced' ? 'bg-orange-500' : 'bg-red-500'}`} />
+                      <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Intel Core: {health.intelligence === 'synced' ? 'Synced' : 'Error'}</span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -456,7 +466,7 @@ export default function Dashboard() {
           <div className="absolute top-0 left-0 w-32 h-32 bg-orange-500/5 rounded-full blur-[50px] pointer-events-none" />
           <div className="flex items-center justify-between mb-6 relative z-10">
             <div>
-              <p className="text-orange-400 text-xs font-bold uppercase tracking-[0.3em] mb-1">Fleet Watchlist</p>
+              <p className="text-orange-400 text-xs font-bold uppercase tracking-wider mb-1">Fleet Watchlist</p>
               <h2 className="text-xl font-black text-white">Priority Zones Monitor</h2>
             </div>
             <div className="px-3 py-1 rounded-full bg-orange-500/10 border border-orange-500/20 text-[10px] font-black text-orange-500 uppercase">
@@ -516,7 +526,7 @@ export default function Dashboard() {
       {user?.role === 'operator' && (
         <section className="rounded-3xl border border-[#222] bg-[#0a0a0a] overflow-hidden p-6 relative shadow-2xl">
           <div className="absolute top-0 right-0 w-32 h-32 bg-orange-500/5 rounded-full blur-[50px] pointer-events-none" />
-          <p className="text-orange-400 text-xs font-bold uppercase tracking-[0.3em] mb-4">Fleet Operations</p>
+          <p className="text-orange-400 text-xs font-bold uppercase tracking-wider mb-4">Fleet Operations</p>
           <FleetAllocation fleetSize={user.fleet_size} hotspots={trends.top_zones} />
         </section>
       )}
@@ -529,7 +539,7 @@ export default function Dashboard() {
       <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="rounded-3xl border border-[#222] bg-[#0a0a0a] p-6 relative overflow-hidden">
           <div className="absolute top-0 right-0 w-32 h-32 bg-orange-500/5 rounded-full blur-[50px] pointer-events-none" />
-          <p className="text-orange-400 text-xs font-bold uppercase tracking-[0.3em] mb-3">Surging Demand</p>
+          <p className="text-orange-400 text-xs font-bold uppercase tracking-wider mb-3">Surging Demand</p>
           <h2 className="text-2xl font-extrabold text-white">Top 5 Hotspots (Past 7 Days)</h2>
           <p className="text-slate-400 mt-2 text-sm leading-relaxed mb-6">
             City-wide zones with the highest volume of pickups. Use this to position fleets dynamically for maximum revenue.
@@ -563,7 +573,7 @@ export default function Dashboard() {
 
         <div className="rounded-3xl border border-[#222] bg-[#0a0a0a] p-6 relative overflow-hidden">
           <div className="absolute bottom-0 right-0 w-32 h-32 bg-orange-500/5 rounded-full blur-[50px] pointer-events-none" />
-          <p className="text-orange-400 text-xs font-bold uppercase tracking-[0.3em] mb-3">Idle Areas</p>
+          <p className="text-orange-400 text-xs font-bold uppercase tracking-wider mb-3">Idle Areas</p>
           <h2 className="text-2xl font-extrabold text-white">Lowest Traffic (Past 7 Days)</h2>
           <p className="text-slate-400 mt-2 text-sm leading-relaxed mb-6">
             Zones suffering from coverage gaps or naturally dead demand. Instruct fleets to keep moving if idle here.
@@ -595,31 +605,26 @@ export default function Dashboard() {
         </div>
       </section>
 
-      {/* Interactive Zone Map */}
-      <section className="rounded-3xl border border-[#222] bg-[#0a0a0a] p-6 md:p-8">
-        <div className="mb-6">
-          <p className="text-orange-400 text-xs font-bold uppercase tracking-[0.3em] mb-3">Geographic Intelligence</p>
-          <h2 className="text-2xl md:text-3xl font-extrabold text-white">Live Zone Map</h2>
-          <p className="text-slate-400 mt-3 text-sm max-w-2xl leading-relaxed">
-            Interactive map of all NYC taxi zones. Circle size and color reflect demand volume — hover over zones for details. Red = very high demand, Gold = low demand.
-          </p>
+      {/* Integrated Geographic Intelligence Map */}
+      <section className="rounded-3xl border border-[#222] bg-[#0a0a0a] p-6 md:p-8 relative overflow-hidden shadow-2xl">
+        <div className="absolute top-0 left-0 w-64 h-64 bg-orange-500/5 rounded-full blur-[100px] pointer-events-none" />
+        <div className="mb-8 relative z-10">
+          <p className="text-orange-400 text-xs font-bold uppercase tracking-wider mb-3">Spatial Intelligence</p>
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+            <div>
+              <h2 className="text-2xl md:text-3xl font-extrabold text-white">Live Operations Map</h2>
+              <p className="text-slate-400 mt-3 text-sm max-w-2xl leading-relaxed">
+                Switch between **Live Zone Map** for precise geographic pickup density or **Live Area Map** for a proportional footprint of borough-wide demand gravity.
+              </p>
+            </div>
+            <div className="flex items-center gap-3">
+               <div className="px-3 py-1.5 rounded-xl bg-orange-500/10 border border-orange-500/20 text-[10px] font-black text-orange-500 uppercase tracking-widest">
+                  Multi-View Enabled
+               </div>
+            </div>
+          </div>
         </div>
         <ZoneMap />
-      </section>
-
-      {/* Global Heatmap Section */}
-      <section className="rounded-3xl border border-[#222] bg-[#0a0a0a] p-6 md:p-8">
-        <div className="mb-8">
-          <p className="text-orange-400 text-xs font-bold uppercase tracking-[0.3em] mb-3">Global Macro Tracking</p>
-          <h2 className="text-2xl md:text-3xl font-extrabold text-white">City Demand Heatmap</h2>
-          <p className="text-slate-400 mt-3 text-sm max-w-2xl leading-relaxed">
-            A proportional geographic footprint of every New York City zone simultaneously. Larger, brighter blocks represent zones dictating the absolute highest physical traffic gravity over the last 7 days.
-          </p>
-        </div>
-        
-        <div className="border border-[#222] rounded-[24px] bg-[#050505] overflow-hidden p-2">
-          <CityHeatmap />
-        </div>
       </section>
       </div>
       )}

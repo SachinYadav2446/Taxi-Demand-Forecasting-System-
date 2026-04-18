@@ -147,7 +147,7 @@ export default function SmartDispatch() {
 
       {recommendations.length > 0 && (
         <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-500">
-          <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-orange-400">🔥 Top 3 Nearby Hotspots</p>
+          <p className="text-[11px] font-bold uppercase tracking-wider text-orange-400">🔥 Top 3 Nearby Hotspots</p>
           <div className="grid gap-4 md:grid-cols-3">
             {recommendations.map((rec, index) => (
               <div key={rec.location_id} className={`rounded-2xl border p-5 transition-all ${index === 0 ? 'border-orange-500/40 bg-gradient-to-br from-orange-500/10 to-transparent shadow-[0_0_20px_rgba(16,185,129,0.1)]' : 'border-[#222] bg-[#0c0c0c]'}`}>
