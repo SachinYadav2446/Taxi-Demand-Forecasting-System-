@@ -35,7 +35,7 @@ export default function Register() {
 
       const res = await api.post(endpoint, payload);
       await login(res.data.access_token);
-      navigate('/dashboard');
+      navigate('/');
     } catch (err) {
       setError(err.response?.data?.detail?.[0]?.msg || err.response?.data?.detail || 'Registration failed');
     } finally {
