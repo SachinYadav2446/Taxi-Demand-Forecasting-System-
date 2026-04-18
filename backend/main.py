@@ -20,7 +20,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-from routers import auth, zones, forecasts, contact
+from routers import auth, zones, forecasts, contact, intelligence
 
 @app.get("/")
 def root():
@@ -30,6 +30,7 @@ app.include_router(auth.router)
 app.include_router(zones.router)
 app.include_router(forecasts.router)
 app.include_router(contact.router)
+app.include_router(intelligence.router)
 
 if __name__ == "__main__":
     import uvicorn
