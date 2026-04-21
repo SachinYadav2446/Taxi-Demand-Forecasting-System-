@@ -1,10 +1,13 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useAuth } from '../hooks/useAuth';
+import { useTheme } from '../context/ThemeContext';
 import { api } from '../lib/axios';
 import { Activity, TrendingUp, Clock, MapPin, ChevronDown, CloudRain } from 'lucide-react';
 
 export default function DemandForecast() {
   const { user } = useAuth();
+  const { mode } = useTheme();
+  const isDark = mode !== 'light';
   const [zones, setZones] = useState([]);
   const [availableWindow, setAvailableWindow] = useState({ dates: [], times: [], start_timestamp: null, end_timestamp: null });
   const [windowLoading, setWindowLoading] = useState(false);
@@ -34,25 +37,25 @@ export default function DemandForecast() {
   };
 
   const LoadingCard = ({ accent = false }) => (
-    <div className={`rounded-3xl border p-6 shadow-[0_4px_20px_rgba(0,0,0,0.35)] animate-pulse ${accent ? 'border-orange-500/30 bg-gradient-to-br from-orange-600/20 to-red-600/20' : 'border-[#222] bg-[#0a0a0a]'}`}>
-      <div className={`h-3 w-28 rounded-full ${accent ? 'bg-orange-200/30' : 'bg-[#222]'}`} />
-      <div className={`mt-5 h-10 w-32 rounded-xl ${accent ? 'bg-white/15' : 'bg-[#181818]'}`} />
-      <div className={`mt-4 h-3 w-4/5 rounded-full ${accent ? 'bg-white/15' : 'bg-[#202020]'}`} />
-      <div className={`mt-3 h-3 w-2/3 rounded-full ${accent ? 'bg-white/15' : 'bg-[#202020]'}`} />
+    <div className={`rounded-3xl border p-6 shadow-xl animate-pulse ${accent ? 'border-orange-500/30 bg-gradient-to-br from-orange-600/20 to-red-600/20' : (isDark ? 'border-[#222] bg-[#0a0a0a]' : 'border-slate-200 bg-white')}`}>
+      <div className={`h-3 w-28 rounded-full ${accent ? 'bg-orange-200/30' : (isDark ? 'bg-[#222]' : 'bg-slate-200')}`} />
+      <div className={`mt-5 h-10 w-32 rounded-xl ${accent ? 'bg-white/15' : (isDark ? 'bg-[#181818]' : 'bg-slate-200')}`} />
+      <div className={`mt-4 h-3 w-4/5 rounded-full ${accent ? 'bg-white/15' : (isDark ? 'bg-[#202020]' : 'bg-slate-100')}`} />
+      <div className={`mt-3 h-3 w-2/3 rounded-full ${accent ? 'bg-white/15' : (isDark ? 'bg-[#202020]' : 'bg-slate-100')}`} />
     </div>
   );
 
   const MetricCard = ({ eyebrow, title, value, subtitle, accent = false, children }) => (
     <div className={`rounded-3xl border p-5 md:p-6 shadow-2xl backdrop-blur-3xl bg-[length:200%_200%] bg-gradient-to-br ${accent
-        ? 'border-orange-500/20 from-orange-950/20 via-[#1a1a1a]/90 to-[#0a0a0a]/90'
-        : 'border-white/[0.08] from-[#1a1a1a]/90 via-[#111]/80 to-[#050505]/90'
+        ? (isDark ? 'border-orange-500/20 from-orange-950/20 via-[#1a1a1a]/90 to-[#0a0a0a]/90' : 'border-orange-500/20 from-orange-50/90 via-white to-orange-50/50')
+        : (isDark ? 'border-white/[0.08] from-[#1a1a1a]/90 via-[#111]/80 to-[#050505]/90' : 'border-slate-200 from-white via-slate-50 to-white')
       }`}>
-      <p className={`text-[11px] font-bold uppercase tracking-[0.22em] ${accent ? 'text-orange-200/80' : 'text-slate-500'}`}>{eyebrow}</p>
-      {title && <p className={`mt-3 text-sm font-semibold ${accent ? 'text-white/90' : 'text-slate-300'}`}>{title}</p>}
+      <p className={`text-[11px] font-bold uppercase tracking-[0.22em] ${accent ? (isDark ? 'text-orange-200/80' : 'text-orange-600/80') : 'text-slate-500'}`}>{eyebrow}</p>
+      {title && <p className={`mt-3 text-sm font-semibold ${accent ? (isDark ? 'text-white/90' : 'text-slate-900') : (isDark ? 'text-slate-300' : 'text-slate-700')}`}>{title}</p>}
       {value !== undefined && value !== null && (
-        <div className="mt-3 text-3xl font-black tracking-tight text-white">{value}</div>
+        <div className={`mt-3 text-3xl font-black tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>{value}</div>
       )}
-      {subtitle && <p className={`mt-3 text-sm leading-6 ${accent ? 'text-orange-50/85' : 'text-slate-400'}`}>{subtitle}</p>}
+      {subtitle && <p className={`mt-3 text-sm leading-6 ${accent ? (isDark ? 'text-orange-50/85' : 'text-orange-900/80') : (isDark ? 'text-slate-400' : 'text-slate-500')}`}>{subtitle}</p>}
       {children && <div className="mt-4">{children}</div>}
     </div>
   );
@@ -454,7 +457,7 @@ export default function DemandForecast() {
 
   return (
     <div className="max-w-7xl mx-auto pb-12">
-      <section className="rounded-3xl border border-white/[0.08] backdrop-blur-2xl bg-gradient-to-b from-[#1a1a1a]/80 to-[#0a0a0a]/80 p-6 md:p-10 shadow-2xl relative overflow-hidden">
+      <section className={`rounded-3xl border backdrop-blur-2xl p-6 md:p-10 shadow-2xl relative overflow-hidden ${isDark ? 'border-white/[0.08] bg-gradient-to-b from-[#1a1a1a]/80 to-[#0a0a0a]/80' : 'border-slate-200 bg-white/80'}`}>
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-orange-500/10 rounded-full blur-[120px] pointer-events-none" />
 
         <div className="flex flex-col items-center w-full max-w-4xl mx-auto space-y-10 relative z-10">
@@ -462,19 +465,19 @@ export default function DemandForecast() {
           <div className="flex flex-col items-center text-center">
             <div className="inline-flex items-center gap-2 rounded-full border border-orange-500/30 bg-orange-500/[0.08] px-4 py-2 shadow-[0_0_20px_rgba(249,115,22,0.15)]">
               <div className="h-2 w-2 rounded-full bg-orange-400 animate-pulse" />
-              <p className="text-[11px] font-black uppercase tracking-[0.3em] text-orange-300">Forecast Workspace</p>
+              <p className={`text-[11px] font-black uppercase tracking-[0.3em] ${isDark ? 'text-orange-300' : 'text-orange-600'}`}>Forecast Workspace</p>
             </div>
 
-            <h1 className="mt-6 text-4xl md:text-[4rem] font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-br from-white via-slate-100 to-orange-500 drop-shadow-sm leading-[1.1]">
+            <h1 className={`mt-6 text-4xl md:text-[4rem] font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-br drop-shadow-sm leading-[1.1] ${isDark ? 'from-white via-slate-100 to-orange-500' : 'from-slate-900 via-slate-800 to-orange-600'}`}>
               Demand Forecast
             </h1>
 
-            <p className="mt-5 text-[15px] md:text-base text-slate-400 leading-relaxed max-w-lg">
+            <p className={`mt-5 text-[15px] md:text-base leading-relaxed max-w-lg ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
               Explore near-term taxi demand by zone and inspect a specific prediction window that the model can actually serve.
             </p>
           </div>
 
-          <div className="w-full rounded-3xl border border-white/[0.08] bg-[#000000]/60 backdrop-blur-2xl p-6 md:p-8 shadow-2xl text-left">
+          <div className={`w-full rounded-3xl border backdrop-blur-2xl p-6 md:p-8 shadow-2xl text-left ${isDark ? 'border-white/[0.08] bg-[#000000]/60' : 'border-slate-200 bg-white/60'}`}>
             <div className="flex flex-col gap-6">
 
               {/* Zone Selection */}
@@ -485,16 +488,16 @@ export default function DemandForecast() {
                 <div className="relative">
                   <button
                     onClick={() => setZoneDropdownOpen(!zoneDropdownOpen)}
-                    className="flex w-full items-center justify-between pl-5 pr-5 py-3.5 border border-white/[0.08] rounded-xl text-white focus:outline-none focus:ring-1 focus:ring-orange-500 bg-white/[0.03] hover:bg-white/[0.06] transition-colors font-semibold shadow-sm"
+                    className={`flex w-full items-center justify-between pl-5 pr-5 py-3.5 border rounded-xl focus:outline-none focus:ring-1 focus:ring-orange-500 transition-colors font-semibold shadow-sm ${isDark ? 'border-white/[0.08] text-white bg-white/[0.03] hover:bg-white/[0.06]' : 'border-slate-200 text-slate-900 bg-white hover:bg-slate-50'}`}
                   >
                     <span className="truncate text-left">
                       {selectedZone ? zones.find(z => z.location_id?.toString() === selectedZone?.toString())?.zone_name || 'Selected zone' : 'Choose a zone'}
                     </span>
-                    <ChevronDown size={18} className={`text-slate-500 flex-shrink-0 transition-transform ${zoneDropdownOpen ? 'rotate-180' : ''}`} />
+                    <ChevronDown size={18} className={`flex-shrink-0 transition-transform ${zoneDropdownOpen ? 'rotate-180' : ''} ${isDark ? 'text-slate-500' : 'text-slate-400'}`} />
                   </button>
 
                   {zoneDropdownOpen && (
-                    <div className="absolute z-50 mt-2 w-full bg-[#080808] border border-[#222] rounded-xl shadow-2xl overflow-hidden">
+                    <div className={`absolute z-50 mt-2 w-full border rounded-xl shadow-2xl overflow-hidden ${isDark ? 'bg-[#080808] border-[#222]' : 'bg-white border-slate-200'}`}>
                       <div className="max-h-64 overflow-y-auto p-2">
                         <div className="flex flex-col gap-1">
                           {zones.length === 0 ? (
@@ -509,7 +512,7 @@ export default function DemandForecast() {
                                 }}
                                 className={`py-3 px-4 text-sm text-left rounded-lg transition-all ${selectedZone === z.location_id.toString()
                                     ? 'bg-orange-500 text-white font-bold'
-                                    : 'text-slate-300 hover:bg-[#1a1a1a] hover:text-white'
+                                    : (isDark ? 'text-slate-300 hover:bg-[#1a1a1a] hover:text-white' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900')
                                   }`}
                               >
                                 {z.zone_name}
@@ -534,7 +537,7 @@ export default function DemandForecast() {
                     onChange={(e) => setSelectedForecastDate(e.target.value)}
                     disabled={loading || windowLoading || !availableWindow.start_timestamp}
                     min={availableWindow.start_timestamp ? availableWindow.start_timestamp.split('T')[0] : ''}
-                    className="block w-full px-5 py-3.5 border border-white/[0.08] rounded-xl text-white focus:outline-none focus:ring-1 focus:ring-orange-500 focus:border-orange-500 bg-white/[0.03] hover:bg-white/[0.06] transition-colors font-medium shadow-sm disabled:opacity-60 disabled:cursor-not-allowed [color-scheme:dark]"
+                    className={`block w-full px-5 py-3.5 border rounded-xl focus:outline-none focus:ring-1 focus:ring-orange-500 focus:border-orange-500 transition-colors font-medium shadow-sm disabled:opacity-60 disabled:cursor-not-allowed ${isDark ? 'border-white/[0.08] text-white bg-white/[0.03] hover:bg-white/[0.06] [color-scheme:dark]' : 'border-slate-200 text-slate-900 bg-white hover:bg-slate-50'}`}
                   />
                 </div>
 
@@ -548,7 +551,7 @@ export default function DemandForecast() {
                       <button
                         onClick={() => !loading && !windowLoading && timeOptions.length > 0 && setTimeDropdownOpen(!timeDropdownOpen)}
                         disabled={loading || windowLoading || !timeOptions.length}
-                        className="w-full px-5 py-3.5 border border-white/[0.08] rounded-xl text-white focus:outline-none focus:ring-1 focus:ring-orange-500 hover:bg-white/[0.06] bg-white/[0.03] transition-colors font-medium shadow-sm disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-between"
+                        className={`w-full px-5 py-3.5 border rounded-xl focus:outline-none focus:ring-1 focus:ring-orange-500 transition-colors font-medium shadow-sm disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-between ${isDark ? 'border-white/[0.08] text-white bg-white/[0.03] hover:bg-white/[0.06]' : 'border-slate-200 text-slate-900 bg-white hover:bg-slate-50'}`}
                       >
                         <span className="truncate">
                           {selectedForecastTime
@@ -556,11 +559,11 @@ export default function DemandForecast() {
                             : (windowLoading ? 'Loading slot...' : (selectedForecastDate ? 'Select slot' : 'Select date'))
                           }
                         </span>
-                        <ChevronDown size={18} className={`text-slate-500 flex-shrink-0 transition-transform ${timeDropdownOpen ? 'rotate-180' : ''}`} />
+                        <ChevronDown size={18} className={`flex-shrink-0 transition-transform ${timeDropdownOpen ? 'rotate-180' : ''} ${isDark ? 'text-slate-500' : 'text-slate-400'}`} />
                       </button>
 
                       {timeDropdownOpen && (
-                        <div className="absolute z-50 mt-2 w-full bg-[#080808] border border-[#222] rounded-xl shadow-2xl overflow-hidden">
+                        <div className={`absolute z-50 mt-2 w-full border rounded-xl shadow-2xl overflow-hidden ${isDark ? 'bg-[#080808] border-[#222]' : 'bg-white border-slate-200'}`}>
                           <div className="max-h-64 overflow-y-auto p-2">
                             <div className="grid grid-cols-3 gap-1.5">
                               {timeOptions.map((slot) => (
@@ -572,7 +575,7 @@ export default function DemandForecast() {
                                   }}
                                   className={`py-2 px-2 text-sm rounded-lg transition-all ${selectedForecastTime === slot.value
                                       ? 'bg-orange-500 text-white font-bold'
-                                      : 'text-slate-300 hover:bg-[#1a1a1a] hover:text-white'
+                                      : (isDark ? 'text-slate-300 hover:bg-[#1a1a1a] hover:text-white' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900')
                                     }`}
                                 >
                                   {slot.value}
@@ -584,7 +587,7 @@ export default function DemandForecast() {
                       )}
                     </div>
                   ) : (
-                    <div className="flex px-5 py-3.5 items-center rounded-xl border border-white/[0.05] bg-white/[0.02] text-slate-400 font-medium truncate">
+                    <div className={`flex px-5 py-3.5 items-center rounded-xl border font-medium truncate ${isDark ? 'border-white/[0.05] bg-white/[0.02] text-slate-400' : 'border-slate-200 bg-slate-50 text-slate-500'}`}>
                       Daily aggregate window
                     </div>
                   )}
@@ -592,16 +595,16 @@ export default function DemandForecast() {
 
                 {/* Actions */}
                 <div className="flex gap-3 h-[54px]">
-                  <div className="flex p-1.5 bg-white/[0.03] rounded-xl border border-white/[0.08]">
+                  <div className={`flex p-1.5 rounded-xl border ${isDark ? 'bg-white/[0.03] border-white/[0.08]' : 'bg-slate-50 border-slate-200'}`}>
                     <button
                       onClick={() => setHorizon('hourly')}
-                      className={`px-4 text-sm font-bold rounded-lg transition-all ${horizon === 'hourly' ? 'bg-[#2a2a2a] text-orange-500 shadow-sm' : 'text-slate-500 hover:text-slate-300'}`}
+                      className={`px-4 text-sm font-bold rounded-lg transition-all ${horizon === 'hourly' ? (isDark ? 'bg-[#2a2a2a] text-orange-500 shadow-sm' : 'bg-white text-orange-500 shadow-sm') : (isDark ? 'text-slate-500 hover:text-slate-300' : 'text-slate-500 hover:text-slate-700')}`}
                     >
                       Hourly
                     </button>
                     <button
                       onClick={() => setHorizon('daily')}
-                      className={`px-4 text-sm font-bold rounded-lg transition-all ${horizon === 'daily' ? 'bg-[#2a2a2a] text-orange-500 shadow-sm' : 'text-slate-500 hover:text-slate-300'}`}
+                      className={`px-4 text-sm font-bold rounded-lg transition-all ${horizon === 'daily' ? (isDark ? 'bg-[#2a2a2a] text-orange-500 shadow-sm' : 'bg-white text-orange-500 shadow-sm') : (isDark ? 'text-slate-500 hover:text-slate-300' : 'text-slate-500 hover:text-slate-700')}`}
                     >
                       Daily
                     </button>
@@ -643,7 +646,7 @@ export default function DemandForecast() {
 
       {loading ? (
         <div className="space-y-6">
-          <div className="rounded-3xl border border-orange-500/20 backdrop-blur-3xl bg-gradient-to-br from-[#120a00]/90 to-[#0a0a0a]/90 p-8 md:p-12 shadow-2xl relative overflow-hidden flex flex-col items-center justify-center min-h-[320px]">
+          <div className={`rounded-3xl border border-orange-500/20 backdrop-blur-3xl p-8 md:p-12 shadow-2xl relative overflow-hidden flex flex-col items-center justify-center min-h-[320px] ${isDark ? 'bg-gradient-to-br from-[#120a00]/90 to-[#0a0a0a]/90' : 'bg-gradient-to-br from-orange-50/90 to-white'}`}>
             {/* Spinning/pulsing background effects */}
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-orange-500/10 rounded-full blur-[100px] pointer-events-none animate-pulse" style={{ animationDuration: '4s' }} />
 
@@ -667,7 +670,7 @@ export default function DemandForecast() {
               <div className="text-center space-y-4">
                 <p className="text-[11px] font-black uppercase tracking-[0.4em] text-orange-400/80">Active Execution Engine</p>
                 <div className="flex items-center justify-center gap-3">
-                  <h3 className="text-2xl md:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white to-orange-200">
+                  <h3 className={`text-2xl md:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r ${isDark ? 'from-white to-orange-200' : 'from-slate-900 to-orange-500'}`}>
                     Synthesizing Demand Matrix
                   </h3>
                   <span className="flex gap-1">
@@ -678,9 +681,9 @@ export default function DemandForecast() {
                 </div>
 
                 <div className="mt-6 flex items-center justify-center gap-2">
-                  <div className="inline-flex items-center justify-center gap-3 px-5 py-2.5 rounded-2xl bg-black/50 border border-white/5 backdrop-blur-md">
+                  <div className={`inline-flex items-center justify-center gap-3 px-5 py-2.5 rounded-2xl border backdrop-blur-md ${isDark ? 'bg-black/50 border-white/5' : 'bg-white/80 border-slate-200 shadow-sm'}`}>
                     <span className="w-2 h-2 rounded-full bg-orange-500 animate-pulse" />
-                    <span className="text-sm font-semibold text-slate-300">Elapsed Time: <span className="text-white ml-2 tabular-nums tracking-widest">{formatDuration(predictionTimerMs)}</span></span>
+                    <span className={`text-sm font-semibold ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>Elapsed Time: <span className={`ml-2 tabular-nums tracking-widest ${isDark ? 'text-white' : 'text-slate-900'}`}>{formatDuration(predictionTimerMs)}</span></span>
                   </div>
                 </div>
               </div>
@@ -692,33 +695,33 @@ export default function DemandForecast() {
             </div>
           </div>
 
-          <div className="rounded-3xl border border-white/[0.08] backdrop-blur-2xl bg-gradient-to-br from-[#1a1a1a]/80 to-[#0a0a0a]/80 px-5 py-4 shadow-2xl">
+          <div className={`rounded-3xl border backdrop-blur-2xl px-5 py-4 shadow-2xl ${isDark ? 'border-white/[0.08] bg-gradient-to-br from-[#1a1a1a]/80 to-[#0a0a0a]/80' : 'border-slate-200 bg-white/80'}`}>
             <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
               <div>
                 <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-slate-500">Forecast Context</p>
-                <p className="mt-2 text-sm text-slate-400">Current run details for the selected zone and forecast window.</p>
+                <p className={`mt-2 text-sm ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Current run details for the selected zone and forecast window.</p>
               </div>
 
               <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4 xl:min-w-[760px]">
-                <div className="rounded-2xl border border-white/5 bg-white/[0.03] px-4 py-3">
+                <div className={`rounded-2xl border px-4 py-3 ${isDark ? 'border-white/5 bg-white/[0.03]' : 'border-slate-200 bg-slate-50'}`}>
                   <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">Model</p>
-                  <p className="mt-2 text-sm font-semibold text-white">{modelLabel(modelMeta?.model_type)}</p>
+                  <p className={`mt-2 text-sm font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>{modelLabel(modelMeta?.model_type)}</p>
                 </div>
-                <div className="rounded-2xl border border-white/5 bg-white/[0.03] px-4 py-3">
+                <div className={`rounded-2xl border px-4 py-3 ${isDark ? 'border-white/5 bg-white/[0.03]' : 'border-slate-200 bg-slate-50'}`}>
                   <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">Horizon</p>
-                  <p className="mt-2 text-sm font-semibold text-white capitalize">{horizon}</p>
+                  <p className={`mt-2 text-sm font-semibold capitalize ${isDark ? 'text-white' : 'text-slate-900'}`}>{horizon}</p>
                 </div>
-                <div className="rounded-2xl border border-white/5 bg-white/[0.03] px-4 py-3">
+                <div className={`rounded-2xl border px-4 py-3 ${isDark ? 'border-white/5 bg-white/[0.03]' : 'border-slate-200 bg-slate-50'}`}>
                   <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">Viewing</p>
-                  <p className="mt-2 text-sm font-semibold text-white">
+                  <p className={`mt-2 text-sm font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>
                     {requestedWindow?.timestamp
                       ? new Date(requestedWindow.timestamp).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
                       : 'No forecast window selected'}
                   </p>
                 </div>
-                <div className="rounded-2xl border border-white/5 bg-white/[0.03] px-4 py-3">
+                <div className={`rounded-2xl border px-4 py-3 ${isDark ? 'border-white/5 bg-white/[0.03]' : 'border-slate-200 bg-slate-50'}`}>
                   <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">Last Run</p>
-                  <p className="mt-2 text-sm font-semibold text-white">{lastPredictionMs !== null ? formatDuration(lastPredictionMs) : 'Pending'}</p>
+                  <p className={`mt-2 text-sm font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>{lastPredictionMs !== null ? formatDuration(lastPredictionMs) : 'Pending'}</p>
                 </div>
               </div>
             </div>
@@ -732,18 +735,18 @@ export default function DemandForecast() {
                 <LoadingCard />
               </div>
 
-              <div className="rounded-3xl border border-white/[0.08] backdrop-blur-2xl bg-gradient-to-br from-[#1a1a1a]/80 to-[#0a0a0a]/80 p-6 md:p-8 shadow-2xl relative overflow-hidden">
+              <div className={`rounded-3xl border backdrop-blur-2xl p-6 md:p-8 shadow-2xl relative overflow-hidden ${isDark ? 'border-white/[0.08] bg-gradient-to-br from-[#1a1a1a]/80 to-[#0a0a0a]/80' : 'border-slate-200 bg-white/80'}`}>
                 <div className="flex items-center justify-between mb-8">
-                  <div className="h-7 w-52 rounded-xl bg-[#1b1b1b] animate-pulse" />
+                  <div className={`h-7 w-52 rounded-xl animate-pulse ${isDark ? 'bg-[#1b1b1b]' : 'bg-slate-200'}`} />
                   <div className="flex gap-3">
-                    <div className="h-4 w-20 rounded-full bg-[#1b1b1b] animate-pulse" />
-                    <div className="h-4 w-20 rounded-full bg-[#1b1b1b] animate-pulse" />
+                    <div className={`h-4 w-20 rounded-full animate-pulse ${isDark ? 'bg-[#1b1b1b]' : 'bg-slate-200'}`} />
+                    <div className={`h-4 w-20 rounded-full animate-pulse ${isDark ? 'bg-[#1b1b1b]' : 'bg-slate-200'}`} />
                   </div>
                 </div>
 
-                <div className="h-[400px] rounded-2xl border border-[#1a1a1a] bg-[#080808] flex flex-col items-center justify-center">
+                <div className={`h-[400px] rounded-2xl border flex flex-col items-center justify-center ${isDark ? 'border-[#1a1a1a] bg-[#080808]' : 'border-slate-200 bg-slate-50'}`}>
                   <Activity size={44} className="text-orange-500/40 mb-4 animate-pulse" />
-                  <p className="text-slate-400 font-medium">Generating demand forecast...</p>
+                  <p className={`font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Generating demand forecast...</p>
                   <p className="text-slate-500 text-sm mt-2">Updating peak stats, model status, and trajectory</p>
                 </div>
               </div>
@@ -835,22 +838,22 @@ export default function DemandForecast() {
                 </MetricCard>
               </div>
 
-              <div className="rounded-3xl border border-white/[0.08] backdrop-blur-2xl bg-gradient-to-br from-[#1a1a1a]/80 to-[#0a0a0a]/80 p-6 md:p-8 shadow-2xl relative overflow-hidden">
+              <div className={`rounded-3xl border backdrop-blur-2xl p-6 md:p-8 shadow-2xl relative overflow-hidden ${isDark ? 'border-white/[0.08] bg-gradient-to-br from-[#1a1a1a]/80 to-[#0a0a0a]/80' : 'border-slate-200 bg-white/80'}`}>
                 <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[500px] h-[500px] bg-orange-500/5 rounded-full blur-[100px] pointer-events-none" />
 
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8 relative z-10">
                   <div>
-                    <h2 className="text-lg font-bold text-white">Demand Trajectory</h2>
-                    <p className="text-sm text-slate-400 mt-1">Historical demand versus predicted demand for the active zone.</p>
+                    <h2 className={`text-lg font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>Demand Trajectory</h2>
+                    <p className={`text-sm mt-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Historical demand versus predicted demand for the active zone.</p>
                   </div>
                   <div className="flex items-center gap-4 text-sm font-medium">
                     <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-full bg-[#444]"></div>
-                      <span className="text-slate-400">Historical</span>
+                      <div className={`w-3 h-3 rounded-full ${isDark ? 'bg-[#444]' : 'bg-slate-300'}`}></div>
+                      <span className={isDark ? 'text-slate-400' : 'text-slate-600'}>Historical</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <div className="w-3 h-3 rounded-full bg-orange-500"></div>
-                      <span className="text-white">Predicted</span>
+                      <span className={isDark ? 'text-white' : 'text-slate-900'}>Predicted</span>
                     </div>
                   </div>
                 </div>
@@ -897,7 +900,7 @@ export default function DemandForecast() {
                             x2={svgChart.width - svgChart.padding.right}
                             y1={tick.y}
                             y2={tick.y}
-                            stroke="#1a1a1a"
+                            stroke={isDark ? "#1a1a1a" : "#f1f5f9"}
                             strokeWidth="1"
                           />
                           <text x={svgChart.padding.left - 10} y={tick.y + 4} fill="#475569" fontSize="11" textAnchor="end">{tick.value}</text>
@@ -1110,20 +1113,20 @@ export default function DemandForecast() {
 
             <div className="xl:col-span-4 space-y-5">
               {/* Live External Factors */}
-              <div className="rounded-3xl border border-blue-500/20 backdrop-blur-3xl bg-gradient-to-br from-blue-950/20 via-[#111]/80 to-[#050505]/90 p-5 shadow-2xl relative overflow-hidden">
+              <div className={`rounded-3xl border border-blue-500/20 backdrop-blur-3xl p-5 shadow-2xl relative overflow-hidden ${isDark ? 'bg-gradient-to-br from-blue-950/20 via-[#111]/80 to-[#050505]/90' : 'bg-gradient-to-br from-blue-50 to-white border-blue-200'}`}>
                 <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-[50px] pointer-events-none" />
                 <div className="flex items-center gap-4 relative z-10">
-                  <div className="p-3.5 bg-blue-500/10 border border-blue-400/20 rounded-2xl text-blue-400">
+                  <div className="p-3.5 bg-blue-500/10 border border-blue-400/20 rounded-2xl text-blue-500">
                     <CloudRain size={22} />
                   </div>
                   <div>
-                    <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-blue-300">Live External Factor</p>
-                    <p className="text-white font-bold text-[15px] mt-0.5">NYC: Light Rain • 62°F</p>
+                    <p className={`text-[10px] font-bold uppercase tracking-[0.22em] ${isDark ? 'text-blue-300' : 'text-blue-600'}`}>Live External Factor</p>
+                    <p className={`font-bold text-[15px] mt-0.5 ${isDark ? 'text-white' : 'text-slate-900'}`}>NYC: Light Rain • 62°F</p>
                   </div>
                 </div>
-                <div className="mt-4 flex items-center gap-2 rounded-xl bg-black/40 border border-white/5 p-2.5 relative z-10">
+                <div className={`mt-4 flex items-center gap-2 rounded-xl border p-2.5 relative z-10 ${isDark ? 'bg-black/40 border-white/5' : 'bg-slate-50 border-slate-200'}`}>
                   <span className="w-2 h-2 rounded-full bg-orange-500 animate-pulse ml-1" />
-                  <p className="text-[11px] font-bold text-orange-400/90 tracking-wide uppercase">SARIMAX Engine weighting precipitation</p>
+                  <p className="text-[11px] font-bold text-orange-500 tracking-wide uppercase">SARIMAX Engine weighting precipitation</p>
                 </div>
               </div>
 
@@ -1134,7 +1137,7 @@ export default function DemandForecast() {
                 subtitle="This score belongs to the current zone and horizon. The notebook benchmark below is only a project reference."
               >
                 <div className="space-y-3 text-sm">
-                  <div className="flex items-center justify-between gap-4 rounded-2xl border border-white/5 bg-black/40 backdrop-blur-md px-3 py-3 hover:bg-black/80 transition-colors">
+                  <div className={`flex items-center justify-between gap-4 rounded-2xl border backdrop-blur-md px-3 py-3 transition-colors ${isDark ? 'border-white/5 bg-black/40 hover:bg-black/80' : 'border-slate-200 bg-slate-50 hover:bg-slate-100'}`}>
                     <span className="text-slate-500">Confidence band</span>
                     <span className={`font-semibold ${confidenceBand === 'high' ? 'text-orange-300' : confidenceBand === 'medium' ? 'text-orange-300' : 'text-rose-300'}`}>
                       {confidenceBand ? `${confidenceBand[0].toUpperCase()}${confidenceBand.slice(1)}` : 'Unavailable'}
@@ -1144,34 +1147,34 @@ export default function DemandForecast() {
               </MetricCard>
 
               {/* Backtesting & Trust Building Card */}
-              <div className="rounded-3xl border border-white/[0.08] backdrop-blur-3xl bg-gradient-to-br from-[#1a1a1a]/90 via-[#111]/80 to-[#050505]/90 p-5 md:p-6 shadow-2xl">
-                <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-orange-200/80 mb-3">Model Verification</p>
-                <h3 className="text-sm font-semibold text-white/90 mb-1">Backtest Validation Results</h3>
-                <p className="text-sm text-slate-400 leading-relaxed mb-5">
+              <div className={`rounded-3xl border backdrop-blur-3xl p-5 md:p-6 shadow-2xl ${isDark ? 'border-white/[0.08] bg-gradient-to-br from-[#1a1a1a]/90 via-[#111]/80 to-[#050505]/90' : 'border-slate-200 bg-white/80'}`}>
+                <p className={`text-[11px] font-bold uppercase tracking-[0.22em] mb-3 ${isDark ? 'text-orange-200/80' : 'text-orange-600/80'}`}>Model Verification</p>
+                <h3 className={`text-sm font-semibold mb-1 ${isDark ? 'text-white/90' : 'text-slate-900'}`}>Backtest Validation Results</h3>
+                <p className={`text-sm leading-relaxed mb-5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
                   This forecast engine was rigorously backtested on 4 years of historical NYC taxi records to ensure high operational reliability.
                 </p>
 
                 <div className="space-y-4">
                   <div className="flex flex-col gap-1 p-3 rounded-2xl border border-green-500/20 bg-green-500/10">
                     <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold uppercase tracking-wider text-green-300">Mean Absolute Error (MAE)</span>
-                      <span className="text-sm font-black text-white">4.2 trips</span>
+                      <span className={`text-xs font-bold uppercase tracking-wider ${isDark ? 'text-green-300' : 'text-green-600'}`}>Mean Absolute Error (MAE)</span>
+                      <span className={`text-sm font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>4.2 trips</span>
                     </div>
-                    <p className="text-[11px] text-green-200/80">Average deviation between prediction and reality.</p>
+                    <p className={`text-[11px] ${isDark ? 'text-green-200/80' : 'text-green-600/80'}`}>Average deviation between prediction and reality.</p>
                   </div>
 
-                  <div className="flex flex-col gap-1 p-3 rounded-2xl border border-white/5 bg-black/40 backdrop-blur-md hover:bg-black/80 transition-colors">
+                  <div className={`flex flex-col gap-1 p-3 rounded-2xl border backdrop-blur-md transition-colors ${isDark ? 'border-white/5 bg-black/40 hover:bg-black/80' : 'border-slate-200 bg-slate-50 hover:bg-slate-100'}`}>
                     <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold uppercase tracking-wider text-slate-400">R² Score</span>
-                      <span className="text-sm font-black text-white">0.91</span>
+                      <span className="text-xs font-bold uppercase tracking-wider text-slate-500">R² Score</span>
+                      <span className={`text-sm font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>0.91</span>
                     </div>
                     <p className="text-[11px] text-slate-500">Explanation of variance (higher is better).</p>
                   </div>
 
-                  <div className="flex flex-col gap-1 p-3 rounded-2xl border border-white/5 bg-black/40 backdrop-blur-md hover:bg-black/80 transition-colors">
+                  <div className={`flex flex-col gap-1 p-3 rounded-2xl border backdrop-blur-md transition-colors ${isDark ? 'border-white/5 bg-black/40 hover:bg-black/80' : 'border-slate-200 bg-slate-50 hover:bg-slate-100'}`}>
                     <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Validation Period</span>
-                      <span className="text-sm font-black text-white">12 months</span>
+                      <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Validation Period</span>
+                      <span className={`text-sm font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>12 months</span>
                     </div>
                     <p className="text-[11px] text-slate-500">Duration of the out-of-sample holdout test.</p>
                   </div>
@@ -1181,11 +1184,11 @@ export default function DemandForecast() {
           </div>
         </div>
       ) : (
-        <div className="h-96 rounded-3xl border border-white/[0.08] backdrop-blur-2xl bg-gradient-to-br from-[#1a1a1a]/80 to-[#0a0a0a]/80 shadow-2xl flex flex-col items-center justify-center px-6 text-center">
-          <div className="w-16 h-16 bg-[#151515] rounded-2xl flex items-center justify-center mb-4 border border-[#333]">
+        <div className={`h-96 rounded-3xl border backdrop-blur-2xl shadow-2xl flex flex-col items-center justify-center px-6 text-center ${isDark ? 'border-white/[0.08] bg-gradient-to-br from-[#1a1a1a]/80 to-[#0a0a0a]/80' : 'border-slate-200 bg-white/80'}`}>
+          <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-4 border ${isDark ? 'bg-[#151515] border-[#333]' : 'bg-slate-100 border-slate-200'}`}>
             <MapPin size={32} className="text-slate-500" />
           </div>
-          <h3 className="text-lg font-bold text-white mb-1">
+          <h3 className={`text-lg font-bold mb-1 ${isDark ? 'text-white' : 'text-slate-900'}`}>
             {fetchError ? 'Forecast unavailable' : 'Ready to predict'}
           </h3>
           <p className="text-slate-500 max-w-md">

@@ -1,10 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { api } from '../lib/axios';
+import { useTheme } from '../context/ThemeContext';
 import { MapPin, Search, Check, Save, Layers } from 'lucide-react';
 
 export default function ZoneManagement() {
   const { user } = useAuth();
+  const { mode } = useTheme();
+  const isDark = mode !== 'light';
   const [zonesByBorough, setZonesByBorough] = useState({});
   const [selectedZones, setSelectedZones] = useState(new Set());
   const [loading, setLoading] = useState(true);
@@ -72,9 +75,9 @@ export default function ZoneManagement() {
     return (
       <div className="flex items-center justify-center h-full min-h-[600px] relative">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] bg-orange-500/10 rounded-full blur-[100px] pointer-events-none animate-pulse" />
-        <div className="animate-pulse flex flex-col items-center relative z-10 p-12 rounded-3xl border border-white/[0.05] bg-black/40 backdrop-blur-3xl shadow-2xl">
+        <div className={`animate-pulse flex flex-col items-center relative z-10 p-12 rounded-3xl border backdrop-blur-3xl shadow-2xl ${isDark ? 'border-white/[0.05] bg-black/40' : 'border-slate-200 bg-white/80'}`}>
           <Layers size={48} className="text-orange-500/70 mb-5" />
-          <p className="text-slate-400 font-bold uppercase tracking-widest text-sm">Aggregating Zone Topology...</p>
+          <p className={`font-bold uppercase tracking-widest text-sm ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Aggregating Zone Topology...</p>
         </div>
       </div>
     );
@@ -92,17 +95,17 @@ export default function ZoneManagement() {
             <div className="h-2 w-2 rounded-full bg-orange-500 animate-pulse" />
             <p className="text-[11px] font-black uppercase tracking-[0.28em] text-orange-300">Fleet Operations</p>
           </div>
-          <h1 className="text-5xl md:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-100 to-orange-500 tracking-tight leading-none">
+          <h1 className={`text-5xl md:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r tracking-tight leading-none ${isDark ? 'from-white via-slate-100 to-orange-500' : 'from-slate-900 via-slate-800 to-orange-600'}`}>
             Zone Management
           </h1>
-          <p className="text-slate-400 mt-5 font-medium max-w-xl text-[15px] leading-relaxed">
+          <p className={`mt-5 font-medium max-w-xl text-[15px] leading-relaxed ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
             Configure geographic operating boundaries and manage precision fleet targeting to optimize localized demand capture across the city.
           </p>
         </div>
 
-        <div className="flex flex-col md:flex-row items-center gap-3 bg-white/[0.03] p-2 rounded-[28px] border border-white/[0.08] backdrop-blur-3xl w-full max-w-4xl shadow-2xl">
+        <div className={`flex flex-col md:flex-row items-center gap-3 p-2 rounded-[28px] border backdrop-blur-3xl w-full max-w-4xl shadow-2xl ${isDark ? 'bg-white/[0.03] border-white/[0.08]' : 'bg-white/80 border-slate-200'}`}>
           <div className="relative flex-[3] group w-full">
-            <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none text-slate-500 group-focus-within:text-orange-500 transition-colors">
+            <div className={`absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none transition-colors ${isDark ? 'text-slate-500 group-focus-within:text-orange-500' : 'text-slate-400 group-focus-within:text-orange-600'}`}>
               <Search size={18} />
             </div>
             <input
@@ -110,7 +113,7 @@ export default function ZoneManagement() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search zones or boroughs..."
-              className="pl-13 pr-6 py-4 border border-transparent rounded-[22px] focus:outline-none focus:ring-1 focus:ring-orange-500/50 text-base w-full bg-black/40 text-white placeholder-slate-400 transition-all font-medium"
+              className={`pl-13 pr-6 py-4 border border-transparent rounded-[22px] focus:outline-none focus:ring-1 focus:ring-orange-500/50 text-base w-full transition-all font-medium ${isDark ? 'bg-black/40 text-white placeholder-slate-400' : 'bg-slate-50 text-slate-900 placeholder-slate-500'}`}
             />
           </div>
           
@@ -127,25 +130,25 @@ export default function ZoneManagement() {
 
       {message.text && (
         <div className={`mb-8 p-5 rounded-2xl flex items-center justify-center gap-3 text-sm font-bold animate-in fade-in slide-in-from-top-4 shadow-2xl backdrop-blur-xl border relative z-10 ${
-          message.type === 'error' ? 'bg-red-950/60 text-red-200 border-red-500/40' : 'bg-orange-950/40 text-orange-300 border-orange-500/30'
+          message.type === 'error' ? (isDark ? 'bg-red-950/60 text-red-200 border-red-500/40' : 'bg-red-50 text-red-700 border-red-200') : (isDark ? 'bg-orange-950/40 text-orange-300 border-orange-500/30' : 'bg-orange-50 text-orange-700 border-orange-200')
         }`}>
-          {message.type === 'success' && <Check size={20} className="text-orange-400" />}
+          {message.type === 'success' && <Check size={20} className={isDark ? "text-orange-400" : "text-orange-500"} />}
           {message.text}
         </div>
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8 relative z-10">
         {Object.entries(filteredBoroughs).map(([borough, zones]) => (
-          <div key={borough} className="bg-gradient-to-br from-[#1a1a1a]/80 to-[#050505]/80 backdrop-blur-2xl rounded-3xl border border-white/[0.08] shadow-[0_10px_40px_rgba(0,0,0,0.5)] overflow-hidden flex flex-col h-[520px]">
-            <div className="px-6 py-5 bg-white/[0.02] border-b border-white/[0.08] flex items-center justify-between sticky top-0 z-10 shadow-sm backdrop-blur-md">
+          <div key={borough} className={`backdrop-blur-2xl rounded-3xl border shadow-[0_10px_40px_rgba(0,0,0,0.5)] overflow-hidden flex flex-col h-[520px] ${isDark ? 'bg-gradient-to-br from-[#1a1a1a]/80 to-[#050505]/80 border-white/[0.08]' : 'bg-gradient-to-br from-white/90 to-slate-50/90 border-slate-200'}`}>
+            <div className={`px-6 py-5 border-b flex items-center justify-between sticky top-0 z-10 shadow-sm backdrop-blur-md ${isDark ? 'bg-white/[0.02] border-white/[0.08]' : 'bg-white/50 border-slate-200'}`}>
               <div className="flex items-center gap-3">
                 <div className="p-2 rounded-lg bg-orange-500/10 border border-orange-500/20 shadow-[0_0_10px_rgba(249,115,22,0.1)]">
                   <MapPin size={18} className="text-orange-500" />
                 </div>
-                <h3 className="font-extrabold text-white text-lg tracking-wide">{borough}</h3>
+                <h3 className={`font-extrabold text-lg tracking-wide ${isDark ? 'text-white' : 'text-slate-900'}`}>{borough}</h3>
               </div>
-              <span className="text-[11px] font-bold uppercase tracking-widest bg-black/40 border border-white/10 px-3 py-1.5 rounded-full text-slate-300 shadow-inner">
-                <span className="text-orange-400">{zones.filter(z => selectedZones.has(z.location_id)).length}</span> / {zones.length} selected
+              <span className={`text-[11px] font-bold uppercase tracking-widest border px-3 py-1.5 rounded-full shadow-inner ${isDark ? 'bg-black/40 border-white/10 text-slate-300' : 'bg-slate-100 border-slate-200 text-slate-600'}`}>
+                <span className={isDark ? "text-orange-400" : "text-orange-600"}>{zones.filter(z => selectedZones.has(z.location_id)).length}</span> / {zones.length} selected
               </span>
             </div>
             
@@ -158,27 +161,27 @@ export default function ZoneManagement() {
                     onClick={() => toggleZone(zone.location_id)}
                     className={`w-full text-left px-5 py-4 rounded-xl transition-all duration-300 border flex items-center justify-between group relative overflow-hidden ${
                       isSelected 
-                        ? 'bg-orange-500/10 border-orange-500/30 shadow-[inset_0_0_15px_rgba(249,115,22,0.1)]' 
-                        : 'bg-white/[0.02] border-transparent hover:bg-white/[0.05] hover:border-white/[0.08] hover:shadow-md'
+                        ? (isDark ? 'bg-orange-500/10 border-orange-500/30 shadow-[inset_0_0_15px_rgba(249,115,22,0.1)]' : 'bg-orange-50 border-orange-200 shadow-sm') 
+                        : (isDark ? 'bg-white/[0.02] border-transparent hover:bg-white/[0.05] hover:border-white/[0.08] hover:shadow-md' : 'bg-white border-transparent hover:bg-slate-50 hover:border-slate-200 hover:shadow-sm')
                     }`}
                   >
                     {/* Glowing background hint on hover for unselected */}
-                    {!isSelected && <div className="absolute inset-0 bg-gradient-to-r from-orange-500/0 via-orange-500/0 to-orange-500/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>}
+                    {!isSelected && <div className={`absolute inset-0 bg-gradient-to-r ${isDark ? 'from-orange-500/0 via-orange-500/0 to-orange-500/5' : 'from-orange-50/0 via-orange-50/0 to-orange-100/50'} opacity-0 group-hover:opacity-100 transition-opacity`}></div>}
                     
                     <div className="flex flex-col relative z-10">
-                      <span className={`text-[15px] font-bold tracking-tight mb-0.5 ${isSelected ? 'text-orange-300' : 'text-slate-200 group-hover:text-white'}`}>
+                      <span className={`text-[15px] font-bold tracking-tight mb-0.5 ${isSelected ? (isDark ? 'text-orange-300' : 'text-orange-700') : (isDark ? 'text-slate-200 group-hover:text-white' : 'text-slate-700 group-hover:text-slate-900')}`}>
                         {zone.zone_name}
                       </span>
-                      <span className="text-[11px] uppercase tracking-widest text-slate-500 font-semibold">Zone {zone.location_id}</span>
+                      <span className={`text-[11px] uppercase tracking-widest font-semibold ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Zone {zone.location_id}</span>
                     </div>
                     
                     <div className="relative z-10 ml-4 flex-shrink-0">
                       {isSelected ? (
-                        <div className="bg-gradient-to-br from-orange-400 to-orange-600 text-black rounded-full p-1.5 shadow-[0_0_15px_rgba(249,115,22,0.6)] animate-in zoom-in duration-200">
+                        <div className="bg-gradient-to-br from-orange-400 to-orange-600 text-white rounded-full p-1.5 shadow-[0_0_15px_rgba(249,115,22,0.6)] animate-in zoom-in duration-200">
                           <Check size={14} strokeWidth={3} />
                         </div>
                       ) : (
-                        <div className="w-6 h-6 rounded-full border-[2.5px] border-white/10 group-hover:border-orange-500/30 transition-colors bg-black/20"></div>
+                        <div className={`w-6 h-6 rounded-full border-[2.5px] transition-colors ${isDark ? 'border-white/10 group-hover:border-orange-500/30 bg-black/20' : 'border-slate-200 group-hover:border-orange-300 bg-slate-50'}`}></div>
                       )}
                     </div>
                   </button>
@@ -188,12 +191,12 @@ export default function ZoneManagement() {
           </div>
         ))}
         {Object.keys(filteredBoroughs).length === 0 && (
-           <div className="col-span-full py-32 text-center text-slate-500 bg-gradient-to-br from-[#1a1a1a]/40 to-[#0a0a0a]/40 backdrop-blur-2xl rounded-[32px] border border-white/[0.05] shadow-2xl relative z-10">
-             <div className="w-20 h-20 bg-black/40 rounded-3xl flex items-center justify-center mx-auto mb-6 border border-white/5 shadow-inner">
-                <Search size={32} className="text-slate-600" />
+           <div className={`col-span-full py-32 text-center backdrop-blur-2xl rounded-[32px] border shadow-2xl relative z-10 ${isDark ? 'text-slate-500 bg-gradient-to-br from-[#1a1a1a]/40 to-[#0a0a0a]/40 border-white/[0.05]' : 'text-slate-500 bg-gradient-to-br from-white/60 to-slate-50/60 border-slate-200'}`}>
+             <div className={`w-20 h-20 rounded-3xl flex items-center justify-center mx-auto mb-6 border shadow-inner ${isDark ? 'bg-black/40 border-white/5' : 'bg-slate-100 border-slate-200'}`}>
+                <Search size={32} className={isDark ? "text-slate-600" : "text-slate-400"} />
              </div>
-             <p className="text-xl font-bold text-slate-300 mb-2">Topology not found</p>
-             <p className="text-slate-500 max-w-sm mx-auto">No operating zones match your current geographic search query.</p>
+             <p className={`text-xl font-bold mb-2 ${isDark ? 'text-slate-300' : 'text-slate-800'}`}>Topology not found</p>
+             <p className={`max-w-sm mx-auto ${isDark ? 'text-slate-500' : 'text-slate-500'}`}>No operating zones match your current geographic search query.</p>
            </div>
         )}
       </div>
