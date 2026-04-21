@@ -8,7 +8,7 @@ import {
   Activity, ArrowRight, BrainCircuit, ChevronRight, Zap, Globe, Layers,
   Terminal, Map, TrendingUp, Shield, BarChart3, ExternalLink, Lock,
   MapPin, Route, PieChart, Users, Gauge, Cpu, User, Settings,
-  X, Menu, CheckCircle2, Mail, MessageSquare, Send, Workflow
+  X, Menu, CheckCircle2, Mail, MessageSquare, Send, Workflow, LogOut
 } from 'lucide-react';
 
 /* ─── Magnetic Wrapper ─── */
@@ -57,9 +57,8 @@ function Counter({ end, suffix = '', label, icon, mode }) {
   }, [inView, end]);
   return (
     <motion.div ref={ref} initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
-      className={`relative group p-12 rounded-[3.5rem] border transition-all duration-700 text-center overflow-hidden font-poppins shadow-2xl ${
-        mode === 'light' ? 'bg-white border-slate-100 hover:shadow-orange-500/5' : 'bg-black/40 border-white/[0.06] backdrop-blur-[100px] hover:border-orange-500/30'
-      }`}>
+      className={`relative group p-12 rounded-[3.5rem] border transition-all duration-700 text-center overflow-hidden font-poppins shadow-2xl ${mode === 'light' ? 'bg-white border-slate-100 hover:shadow-orange-500/5' : 'bg-black/40 border-white/[0.06] backdrop-blur-[100px] hover:border-orange-500/30'
+        }`}>
       <div className="absolute inset-0 bg-gradient-to-br from-orange-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-1000" />
       <div className="relative z-10">
         <div className="w-16 h-16 rounded-2xl bg-orange-500/10 text-orange-500 flex items-center justify-center mx-auto mb-8 group-hover:scale-110 group-hover:rotate-6 transition-all duration-500">{icon}</div>
@@ -71,7 +70,7 @@ function Counter({ end, suffix = '', label, icon, mode }) {
 }
 
 /* ─── Feature Detail Modal ─── */
-function FeatureModal({ feature, onClose, mode }) {
+function FeatureModal({ feature, onClose, mode, user }) {
   if (!feature) return null;
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
@@ -85,13 +84,11 @@ function FeatureModal({ feature, onClose, mode }) {
         exit={{ scale: 0.9, opacity: 0 }}
         transition={{ type: 'spring', bounce: 0, duration: 0.4 }}
         onClick={e => e.stopPropagation()}
-        className={`relative w-full max-w-2xl max-h-[85vh] overflow-y-auto border-2 rounded-[2.5rem] p-8 sm:p-12 shadow-2xl transition-colors duration-500 z-[501] pointer-events-auto ${
-          mode === 'light' ? 'bg-white border-orange-500/20 text-slate-900' : 'bg-neutral-900 border-orange-500/30 text-white'
-        }`}>
+        className={`relative w-full max-w-2xl max-h-[85vh] overflow-y-auto border-2 rounded-[2.5rem] p-8 sm:p-12 shadow-2xl transition-colors duration-500 z-[501] pointer-events-auto ${mode === 'light' ? 'bg-white border-orange-500/20 text-slate-900' : 'bg-neutral-900 border-orange-500/30 text-white'
+          }`}>
         {/* Close */}
-        <button onClick={onClose} className={`absolute top-6 right-6 w-10 h-10 rounded-full flex items-center justify-center border transition-all ${
-          mode === 'light' ? 'bg-black/5 border-black/10 text-slate-600' : 'bg-white/5 border-white/10 text-slate-400'
-        } hover:scale-110`}>
+        <button onClick={onClose} className={`absolute top-6 right-6 w-10 h-10 rounded-full flex items-center justify-center border transition-all ${mode === 'light' ? 'bg-black/5 border-black/10 text-slate-600' : 'bg-white/5 border-white/10 text-slate-400'
+          } hover:scale-110`}>
           <X size={18} />
         </button>
 
@@ -110,10 +107,11 @@ function FeatureModal({ feature, onClose, mode }) {
         {/* Live Stats */}
         <div className="grid grid-cols-3 gap-4 mb-10">
           {feature.stats.map((s, i) => (
-            <div key={i} className="bg-white/[0.02] border border-white/[0.04] rounded-2xl p-5 text-center">
+            <div key={i} className={`rounded-2xl p-5 text-center border ${mode === 'light' ? 'bg-slate-50 border-slate-100' : 'bg-white/[0.02] border-white/[0.04]'
+              }`}>
               <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 0.2 + i * 0.1, type: 'spring' }}
-                className="text-2xl font-black text-white">{s.value}</motion.div>
-              <div className="text-[9px] font-bold text-slate-600 uppercase tracking-widest mt-1">{s.label}</div>
+                className={`text-2xl font-black ${mode === 'light' ? 'text-black' : 'text-white'}`}>{s.value}</motion.div>
+              <div className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mt-1">{s.label}</div>
             </div>
           ))}
         </div>
@@ -125,9 +123,9 @@ function FeatureModal({ feature, onClose, mode }) {
             <div key={i} className="space-y-1.5">
               <div className="flex justify-between text-xs">
                 <span className="font-bold text-slate-400">{b.label}</span>
-                <span className="font-black text-white">{b.pct}%</span>
+                <span className={`font-black ${mode === 'light' ? 'text-black' : 'text-white'}`}>{b.pct}%</span>
               </div>
-              <div className="h-2 rounded-full bg-white/5 overflow-hidden">
+              <div className={`h-2 rounded-full overflow-hidden ${mode === 'light' ? 'bg-slate-200' : 'bg-white/5'}`}>
                 <motion.div initial={{ width: 0 }} animate={{ width: `${b.pct}%` }} transition={{ delay: 0.3 + i * 0.15, duration: 1, ease: 'easeOut' }}
                   className="h-full rounded-full bg-gradient-to-r from-orange-500 to-amber-400" />
               </div>
@@ -141,9 +139,10 @@ function FeatureModal({ feature, onClose, mode }) {
           <div className="grid sm:grid-cols-2 gap-2">
             {feature.capabilities.map((cap, i) => (
               <motion.div key={i} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.4 + i * 0.05 }}
-                className="flex items-center gap-3 p-3 rounded-xl bg-white/[0.02] border border-white/[0.03]">
+                className={`flex items-center gap-3 p-3 rounded-xl border ${mode === 'light' ? 'bg-slate-50 border-slate-100' : 'bg-white/[0.02] border-white/[0.03]'
+                  }`}>
                 <CheckCircle2 size={14} className="text-green-500 shrink-0" />
-                <span className="text-xs text-slate-400 font-medium">{cap}</span>
+                <span className={`text-xs font-medium ${mode === 'light' ? 'text-slate-600' : 'text-slate-400'}`}>{cap}</span>
               </motion.div>
             ))}
           </div>
@@ -159,32 +158,59 @@ function FeatureModal({ feature, onClose, mode }) {
   );
 }
 
+function LogoutConfirmModal({ onConfirm, onClose, mode }) {
+  return (
+    <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4">
+      <div className={`absolute inset-0 backdrop-blur-md ${mode === 'light' ? 'bg-white/60' : 'bg-black/80'}`} onClick={onClose} />
+      <div className="relative w-full max-w-sm animate-in zoom-in-95 fade-in duration-300">
+        <div className={`rounded-[2.5rem] border overflow-hidden p-8 text-center shadow-2xl ${mode === 'light' ? 'bg-white border-slate-200' : 'bg-[#0a0a0a] border-[#222]'
+          }`}>
+          <div className="w-16 h-16 rounded-2xl bg-red-500/10 text-red-500 flex items-center justify-center mx-auto mb-6">
+            <LogOut size={32} />
+          </div>
+          <h3 className={`text-xl font-black mb-2 ${mode === 'light' ? 'text-black' : 'text-white'}`}>Sign Out?</h3>
+          <p className="text-slate-500 text-sm mb-8 font-medium">Are you sure you want to terminate your current session?</p>
+
+          <div className="flex flex-col gap-3">
+            <button
+              onClick={onConfirm}
+              className="w-full py-4 rounded-2xl bg-red-500 text-white text-sm font-black hover:bg-red-600 transition-all shadow-[0_10px_20px_rgba(239,68,68,0.2)]"
+            >
+              Yes, Sign Out
+            </button>
+            <button
+              onClick={onClose}
+              className={`w-full py-4 rounded-2xl border text-sm font-bold transition-all ${mode === 'light' ? 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100' : 'bg-[#111] border-[#222] text-slate-400 hover:bg-[#151515]'
+                }`}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ─── Feature Card (clickable) ─── */
 function FeatureCard({ feature, onClick, delay, mode }) {
   return (
-    <motion.div 
-      initial={{ opacity: 0, y: 40 }} 
-      whileInView={{ opacity: 1, y: 0 }} 
-      viewport={{ once: true }} 
+    <motion.div
+      initial={{ opacity: 0, y: 40 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
       transition={{ delay }}
       whileHover={{ scale: 1.03, y: -5 }}
       whileTap={{ scale: 0.98 }}
-      className={`group relative p-12 rounded-[3rem] border transition-all duration-700 cursor-pointer overflow-hidden shadow-xl z-20 ${
-        mode === 'light' ? 'bg-white border-slate-200' : 'bg-black/40 border-white/[0.08] backdrop-blur-3xl'
-      } hover:border-orange-500/40`}
+      onClick={onClick}
+      className={`group relative p-12 rounded-[3rem] border transition-all duration-700 cursor-pointer overflow-hidden shadow-xl z-20 ${mode === 'light' ? 'bg-white border-slate-200' : 'bg-black/40 border-white/[0.08] backdrop-blur-3xl'
+        } hover:border-orange-500/40`}
     >
-      {/* Click Overlay */}
-      <div 
-        onClick={onClick}
-        className="absolute inset-0 z-30 opacity-0 bg-white" 
-      />
-
       <div className="absolute inset-0 bg-gradient-to-br from-orange-500/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-all duration-700 pointer-events-none" />
-      
-      <div className="relative z-10 space-y-8 pointer-events-none">
-        <div className={`w-16 h-16 rounded-2xl flex items-center justify-center border transition-all duration-500 ${
-          mode === 'light' ? 'border-orange-500/20' : 'border-white/10'
-        } ${feature.color} group-hover:bg-orange-500 group-hover:text-black group-hover:border-orange-500`}>{feature.icon}</div>
+
+      <div className="relative z-10 space-y-8">
+        <div className={`w-16 h-16 rounded-2xl flex items-center justify-center border transition-all duration-500 ${mode === 'light' ? 'border-orange-500/20' : 'border-white/10'
+          } ${feature.color} group-hover:bg-orange-500 group-hover:text-black group-hover:border-orange-500`}>{feature.icon}</div>
         <h3 className={`text-3xl font-black tracking-tight uppercase ${mode === 'light' ? 'text-black' : 'text-white'}`}>{feature.title}</h3>
         <p className={`leading-relaxed ${mode === 'light' ? 'text-slate-500' : 'text-slate-400'}`}>{feature.text}</p>
         <div className={`flex items-center justify-between pt-6 border-t mt-4 ${mode === 'light' ? 'border-slate-100' : 'border-white/[0.04]'}`}>
@@ -349,7 +375,7 @@ function StatsCarousel({ mode }) {
 
 /* ─── Main Landing ─── */
 export default function Landing() {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
   const [activeFeature, setActiveFeature] = useState(null);
@@ -357,6 +383,7 @@ export default function Landing() {
   const [form, setForm] = useState({ sender_name: '', sender_email: '', subject: 'Inquiry', message: '' });
   const [isTitleHovered, setIsTitleHovered] = useState(false);
   const [mousePos, setMousePos] = useState({ x: -1000, y: -1000 });
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const { mode, setMode } = useTheme();
 
   const { scrollYProgress } = useScroll();
@@ -399,29 +426,38 @@ export default function Landing() {
   ];
 
   return (
-    <div className={`min-h-screen font-poppins selection:bg-orange-500/30 transition-colors duration-700 ${
-      mode === 'light' ? 'bg-[#fdf6ef] text-slate-900' : 'bg-[#0a0a0c] text-white'
-    }`}>
+    <div className={`min-h-screen font-poppins selection:bg-orange-500/30 transition-colors duration-700 ${mode === 'light' ? 'bg-[#fdf6ef] text-slate-900' : 'bg-[#0a0a0c] text-white'
+      }`}>
+
+      {isLogoutModalOpen && (
+        <LogoutConfirmModal
+          mode={mode}
+          onConfirm={() => {
+            logout();
+            navigate('/login');
+          }}
+          onClose={() => setIsLogoutModalOpen(false)}
+        />
+      )}
 
 
       {/* ── Predictive Intelligence Background ── */}
-      <div className={`fixed inset-0 pointer-events-none z-0 overflow-hidden transition-colors duration-700 ${
-        mode === 'light' ? 'bg-[#fdf6ef]' : 'bg-[#08080a]'
-      }`}>
+      <div className={`fixed inset-0 pointer-events-none z-0 overflow-hidden transition-colors duration-700 ${mode === 'light' ? 'bg-[#fdf6ef]' : 'bg-[#08080a]'
+        }`}>
         {/* Layer 1: Static Tech Grid */}
         <div className={`absolute inset-0 opacity-[0.08] bg-[linear-gradient(to_right,#808080_1px,transparent_1px),linear-gradient(to_bottom,#808080_1px,transparent_1px)] bg-[size:80px_80px]`} />
-        
+
         {/* Layer 2: Reactive Dot Matrix */}
         <div className={`absolute inset-0 opacity-[0.1] bg-[radial-gradient(#808080_1px,transparent_1px)] bg-[size:32px_32px]`} />
 
         {/* Layer 3: Mouse Spotlight Reveal */}
-        <div 
-          className="absolute inset-0 opacity-100 transition-opacity duration-500 ease-out" 
-          style={{ 
-            background: mode === 'dark' 
+        <div
+          className="absolute inset-0 opacity-100 transition-opacity duration-500 ease-out"
+          style={{
+            background: mode === 'dark'
               ? `radial-gradient(600px circle at ${mousePos.x}px ${mousePos.y}px, rgba(249,115,22,0.18), rgba(249,115,22,0.05) 40%, transparent 80%)`
               : `radial-gradient(600px circle at ${mousePos.x}px ${mousePos.y}px, rgba(249,115,22,0.12), rgba(249,115,22,0.03) 40%, transparent 80%)`
-          }} 
+          }}
         />
 
         {/* Layer 4: Floating Data Particles (Optimized) */}
@@ -431,15 +467,15 @@ export default function Landing() {
               key={i}
               className="absolute w-1 h-1 bg-orange-500/10 rounded-full"
               initial={{ x: Math.random() * 100 + "%", y: Math.random() * 100 + "%" }}
-              animate={{ 
+              animate={{
                 x: [null, (Math.random() * 100) + "%"],
                 y: [null, (Math.random() * 100) + "%"],
                 opacity: [0.1, 0.3, 0.1]
               }}
-              transition={{ 
-                duration: 25 + Math.random() * 25, 
-                repeat: Infinity, 
-                ease: "linear" 
+              transition={{
+                duration: 25 + Math.random() * 25,
+                repeat: Infinity,
+                ease: "linear"
               }}
               style={{
                 filter: 'blur(2px)',
@@ -453,11 +489,10 @@ export default function Landing() {
       </div>
 
       {/* ── Nav ── */}
-      <motion.nav 
+      <motion.nav
         style={{ opacity: 1 }}
-        className={`fixed top-0 w-full z-[100] backdrop-blur-3xl border-b transition-colors duration-500 px-6 md:px-16 py-4 flex items-center justify-between ${
-          mode === 'light' ? 'border-black/[0.05] bg-white/80' : 'border-white/[0.08] bg-[#0a0a0c]/80'
-        }`}
+        className={`fixed top-0 w-full z-[100] backdrop-blur-3xl border-b transition-colors duration-500 px-6 md:px-16 py-4 flex items-center justify-between ${mode === 'light' ? 'border-black/[0.05] bg-white/80' : 'border-white/[0.08] bg-[#0a0a0c]/80'
+          }`}
       >
         <div onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="flex items-center gap-3 cursor-pointer group">
           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500 to-amber-500 flex items-center justify-center shadow-lg shadow-orange-500/20 group-hover:rotate-12 transition-transform">
@@ -467,33 +502,30 @@ export default function Landing() {
         </div>
         <div className="hidden md:flex items-center gap-8">
           {navItems.map(n => (
-            <button key={n.label} onClick={n.action} className={`text-[13px] font-bold uppercase tracking-widest transition-colors ${
-              mode === 'light' ? 'text-slate-600 hover:text-orange-600' : 'text-slate-300 hover:text-orange-500'
-            }`}>{n.label}</button>
+            <button key={n.label} onClick={n.action} className={`text-[13px] font-bold uppercase tracking-widest transition-colors ${mode === 'light' ? 'text-slate-600 hover:text-orange-600' : 'text-slate-300 hover:text-orange-500'
+              }`}>{n.label}</button>
           ))}
 
           <div className="flex items-center gap-4">
             <Link to={user ? '/dashboard' : '/login'}
-              className="px-8 py-2.5 rounded-full bg-orange-500 text-white text-[11px] font-black uppercase tracking-widest hover:brightness-110 shadow-lg font-poppins transition-all active:scale-95">
+              className="px-8 py-2.5 rounded-xl bg-orange-500 text-white text-[12px] font-bold uppercase tracking-widest hover:brightness-110 shadow-lg font-poppins transition-all active:scale-95">
               {user ? 'ML Intelligence' : 'Sign In'}
             </Link>
-            
+
             {user && (
               <div className="flex items-center gap-2">
-                <button 
+                <button
                   onClick={() => navigate('/profile')}
-                  className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all border ${
-                    mode === 'light' ? 'bg-black/5 border-black/10 text-slate-600 hover:bg-black/10' : 'bg-white/5 border-white/10 text-slate-300 hover:bg-white/10'
-                  }`}
+                  className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all border ${mode === 'light' ? 'bg-black/5 border-black/10 text-slate-600 hover:bg-black/10' : 'bg-white/5 border-white/10 text-slate-300 hover:bg-white/10'
+                    }`}
                   title="Profile"
                 >
                   <User size={18} />
                 </button>
-                <button 
+                <button
                   onClick={() => navigate('/settings')}
-                  className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all border ${
-                    mode === 'light' ? 'bg-black/5 border-black/10 text-slate-600 hover:bg-black/10' : 'bg-white/5 border-white/10 text-slate-300 hover:bg-white/10'
-                  }`}
+                  className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all border ${mode === 'light' ? 'bg-black/5 border-black/10 text-slate-600 hover:bg-black/10' : 'bg-white/5 border-white/10 text-slate-300 hover:bg-white/10'
+                    }`}
                   title="Settings"
                 >
                   <Settings size={18} />
@@ -529,8 +561,7 @@ export default function Landing() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2, duration: 1 }}
             >
-              <h1 className={`text-6xl sm:text-7xl lg:text-8xl font-black leading-[0.85] tracking-tight uppercase drop-shadow-2xl transition-colors duration-500 ${
-                  mode === 'light' ? 'text-black' : 'text-white'
+              <h1 className={`text-6xl sm:text-7xl lg:text-8xl font-black leading-[0.85] tracking-tight uppercase drop-shadow-2xl transition-colors duration-500 ${mode === 'light' ? 'text-black' : 'text-white'
                 }`}>
                 PREDICT<br />
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-400 via-orange-500 to-amber-500">DEMAND.</span>
@@ -538,21 +569,10 @@ export default function Landing() {
             </motion.div>
 
             <motion.p initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}
-              className={`text-lg max-w-2xl mx-auto leading-relaxed font-poppins transition-colors duration-500 ${
-                mode === 'light' ? 'text-slate-600' : 'text-slate-500'
-              }`}>
+              className={`text-lg max-w-2xl mx-auto leading-relaxed font-poppins transition-colors duration-500 ${mode === 'light' ? 'text-slate-600' : 'text-slate-500'
+                }`}>
               SARIMAX-powered geospatial intelligence for NYC mobility. Transform raw trip data into predictive fleet earnings across 263 taxi zones.
             </motion.p>
-
-            <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.6 }}
-              className="flex justify-center">
-              <MagneticButton>
-                <Link to={user ? '/dashboard' : '/register?role=operator'}
-                  className="px-14 py-6 bg-orange-500 text-white font-black rounded-2xl uppercase text-[15px] tracking-[0.2em] hover:bg-neutral-800 transition-all shadow-[0_20px_50px_rgba(249,115,22,0.3)] active:scale-95 flex items-center gap-3 font-poppins">
-                  {user ? 'Launch ML Engine' : 'Start Free'} <ArrowRight size={22} className="group-hover:translate-x-1 transition-transform" />
-                </Link>
-              </MagneticButton>
-            </motion.div>
 
             {/* Dashboard Image Mockup */}
             <motion.div initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.7, duration: 1 }}
@@ -578,9 +598,8 @@ export default function Landing() {
         </section>
 
         {/* ── Marquee ── */}
-        <div className={`border-y py-8 overflow-hidden transition-colors duration-500 ${
-          mode === 'light' ? 'border-black/[0.05] bg-white/60' : 'border-white/[0.08] bg-black/60'
-        } backdrop-blur-xl`}>
+        <div className={`border-y py-8 overflow-hidden transition-colors duration-500 ${mode === 'light' ? 'border-black/[0.05] bg-white/60' : 'border-white/[0.08] bg-black/60'
+          } backdrop-blur-xl`}>
           <div className="flex animate-[marquee_45s_linear_infinite] whitespace-nowrap gap-16 text-[12px] font-black uppercase tracking-[0.2em] text-slate-400">
             {['SARIMAX Engine', 'NYC Geospatial', 'Surge Detection', 'Fleet Routing', '263 Zones', 'Real-Time Maps'].map((t, i) => (
               <span key={`a-${i}`} className="flex items-center gap-6">{t}<span className="w-1.5 h-1.5 rounded-full bg-orange-500/30" /></span>
@@ -611,9 +630,8 @@ export default function Landing() {
           <div className="max-w-7xl mx-auto flex flex-col items-center">
             <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center mb-12">
               <div className="text-[10px] font-bold text-orange-500 uppercase tracking-widest mb-3">Live Performance</div>
-              <h2 className={`text-4xl sm:text-6xl font-black uppercase tracking-tight line-height-[0.9] transition-colors duration-500 ${
-                mode === 'light' ? 'text-black' : 'text-white'
-              }`}>
+              <h2 className={`text-4xl sm:text-6xl font-black uppercase tracking-tight line-height-[0.9] transition-colors duration-500 ${mode === 'light' ? 'text-black' : 'text-white'
+                }`}>
                 SYSTEM <span className="text-orange-500">BENCHMARKS.</span>
               </h2>
             </motion.div>
@@ -623,27 +641,23 @@ export default function Landing() {
 
         {/* ══════════ VISION ══════════ */}
         <section id="vision" className="relative py-24 sm:py-32 overflow-hidden scroll-mt-24">
-          <div className={`absolute inset-0 bg-gradient-to-b from-transparent to-transparent ${
-            mode === 'light' ? 'via-orange-500/5' : 'via-orange-950/10'
-          }`} />
+          <div className={`absolute inset-0 bg-gradient-to-b from-transparent to-transparent ${mode === 'light' ? 'via-orange-500/5' : 'via-orange-950/10'
+            }`} />
           <div className="relative max-w-4xl mx-auto px-6 text-center space-y-10">
             <motion.div initial={{ opacity: 0, scale: 0.95 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ duration: 1 }}>
-              <h2 className={`text-5xl sm:text-7xl lg:text-8xl font-black uppercase tracking-tight leading-[0.85] transition-colors duration-500 ${
-                mode === 'light' ? 'text-black' : 'text-white'
-              }`}>
+              <h2 className={`text-5xl sm:text-7xl lg:text-8xl font-black uppercase tracking-tight leading-[0.85] transition-colors duration-500 ${mode === 'light' ? 'text-black' : 'text-white'
+                }`}>
                 THE CITY<br />NEVER <span className="text-orange-500">STOPS.</span>
               </h2>
               <div className="w-20 h-1 bg-orange-500 mx-auto my-10 rounded-full" />
-              <p className={`text-lg max-w-lg mx-auto leading-relaxed transition-colors duration-500 ${
-                mode === 'light' ? 'text-slate-600' : 'text-slate-500'
-              }`}>
+              <p className={`text-lg max-w-lg mx-auto leading-relaxed transition-colors duration-500 ${mode === 'light' ? 'text-slate-600' : 'text-slate-500'
+                }`}>
                 While others react, DemandSight operators anticipate. Our SARIMAX models see the surge 3 hours before it arrives.
               </p>
               <div className="pt-10 flex justify-center gap-5">
                 <button onClick={() => navigate('/docs')}
-                  className={`px-12 py-5 border transition-all rounded-2xl font-poppins font-black uppercase text-sm tracking-[0.2em] ${
-                    mode === 'light' ? 'border-black/10 text-black hover:bg-black hover:text-white' : 'border-white/20 text-white hover:bg-white hover:text-black'
-                  }`}>
+                  className={`px-12 py-5 border transition-all rounded-2xl font-poppins font-black uppercase text-sm tracking-[0.2em] ${mode === 'light' ? 'border-black/10 text-black hover:bg-black hover:text-white' : 'border-white/20 text-white hover:bg-white hover:text-black'
+                    }`}>
                   Read the Docs
                 </button>
               </div>
@@ -658,15 +672,13 @@ export default function Landing() {
             <div className="space-y-10 lg:sticky lg:top-32">
               <motion.div initial={{ opacity: 0, x: -30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }}>
                 <div className="text-[10px] font-bold text-orange-500 uppercase tracking-widest mb-4">Get In Touch</div>
-                <h2 className={`text-4xl sm:text-6xl font-black tracking-tight uppercase leading-[0.85] transition-colors duration-500 ${
-                  mode === 'light' ? 'text-black' : 'text-white'
-                }`}>
+                <h2 className={`text-4xl sm:text-6xl font-black tracking-tight uppercase leading-[0.85] transition-colors duration-500 ${mode === 'light' ? 'text-black' : 'text-white'
+                  }`}>
                   LET'S<br /><span className="text-orange-500">CONNECT.</span>
                 </h2>
               </motion.div>
-              <p className={`text-lg leading-relaxed max-w-md transition-colors duration-500 ${
-                mode === 'light' ? 'text-slate-600' : 'text-slate-500'
-              }`}>
+              <p className={`text-lg leading-relaxed max-w-md transition-colors duration-500 ${mode === 'light' ? 'text-slate-600' : 'text-slate-500'
+                }`}>
                 Whether you're an independent driver or managing a fleet of 500+ vehicles, our team is ready to help you deploy predictive intelligence.
               </p>
               <div className="space-y-6">
@@ -678,14 +690,12 @@ export default function Landing() {
                   </div>
                 </div>
                 <div className="flex items-center gap-6">
-                  <div className={`w-14 h-14 rounded-2xl border flex items-center justify-center text-orange-500 ${
-                    mode === 'light' ? 'bg-black/5 border-black/10' : 'bg-white/5 border-white/10'
-                  }`}><Terminal size={22} /></div>
+                  <div className={`w-14 h-14 rounded-2xl border flex items-center justify-center text-orange-500 ${mode === 'light' ? 'bg-black/5 border-black/10' : 'bg-white/5 border-white/10'
+                    }`}><Terminal size={22} /></div>
                   <div>
                     <div className="text-[10px] font-bold text-slate-600 uppercase tracking-wider mb-1">Repository</div>
-                    <a href="https://github.com/SachinYadav2446/Taxi-Demand-Forecasting-System-" target="_blank" rel="noopener noreferrer" className={`font-bold hover:text-orange-500 transition-colors ${
-                      mode === 'light' ? 'text-black' : 'text-white'
-                    }`}>SachinYadav2446</a>
+                    <a href="https://github.com/SachinYadav2446/Taxi-Demand-Forecasting-System-" target="_blank" rel="noopener noreferrer" className={`font-bold hover:text-orange-500 transition-colors ${mode === 'light' ? 'text-black' : 'text-white'
+                      }`}>SachinYadav2446</a>
                   </div>
                 </div>
               </div>
@@ -693,15 +703,14 @@ export default function Landing() {
 
             {/* Right — Form */}
             <motion.div initial={{ opacity: 0, x: 30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }}
-              className={`border backdrop-blur-xl p-8 sm:p-10 rounded-[3rem] max-w-lg w-full lg:ml-auto transition-colors duration-500 ${
-                mode === 'light' ? 'bg-white border-slate-200 shadow-xl' : 'bg-white/[0.015] border-white/[0.04]'
-              }`}>
+              className={`border backdrop-blur-xl p-8 sm:p-10 rounded-[3rem] max-w-lg w-full lg:ml-auto transition-colors duration-500 ${mode === 'light' ? 'bg-white border-slate-200 shadow-xl' : 'bg-white/[0.015] border-white/[0.04]'
+                }`}>
               {!user ? (
                 <div className="text-center py-8 space-y-10 animate-in fade-in zoom-in-95 duration-1000">
                   <div className="w-20 h-20 rounded-[2rem] bg-orange-500/5 border border-orange-500/20 flex items-center justify-center mx-auto text-orange-500 shadow-[0_0_50px_rgba(249,115,22,0.1)]">
                     <Lock size={40} className="animate-pulse" />
                   </div>
-                  
+
                   <div className="space-y-4">
                     <h3 className={`text-4xl font-black uppercase tracking-tight leading-tight ${mode === 'light' ? 'text-black' : 'text-white'}`}>COMMUNICATION<br /><span className="text-orange-500">SECURED.</span></h3>
                     <p className="text-slate-500 text-xs max-w-xs mx-auto font-medium transition-colors">Verify your identity to unlock the direct operational enquiry desk and secure messaging.</p>
@@ -743,23 +752,22 @@ export default function Landing() {
                 <form onSubmit={submitContact} className="space-y-8">
                   <h3 className={`text-2xl font-black uppercase tracking-tight mb-2 transition-colors ${mode === 'light' ? 'text-black' : 'text-white'}`}>Send a Message</h3>
                   <div className="grid sm:grid-cols-2 gap-6">
-                      <div className="space-y-2">
-                        <label className="text-[10px] font-bold text-slate-600 uppercase tracking-wider">Name</label>
-                        <input readOnly type="text" value={form.sender_name} 
-                          className="w-full bg-white/[0.015] border border-white/[0.04] rounded-xl px-5 py-4 text-sm text-slate-400 cursor-not-allowed outline-none font-poppins" />
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-[10px] font-bold text-slate-600 uppercase tracking-wider">Email</label>
-                        <input readOnly type="email" value={form.sender_email} 
-                          className="w-full bg-white/[0.015] border border-white/[0.04] rounded-xl px-5 py-4 text-sm text-slate-400 cursor-not-allowed outline-none font-poppins" />
-                      </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-bold text-slate-600 uppercase tracking-wider">Name</label>
+                      <input readOnly type="text" value={form.sender_name}
+                        className="w-full bg-white/[0.015] border border-white/[0.04] rounded-xl px-5 py-4 text-sm text-slate-400 cursor-not-allowed outline-none font-poppins" />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-bold text-slate-600 uppercase tracking-wider">Email</label>
+                      <input readOnly type="email" value={form.sender_email}
+                        className="w-full bg-white/[0.015] border border-white/[0.04] rounded-xl px-5 py-4 text-sm text-slate-400 cursor-not-allowed outline-none font-poppins" />
+                    </div>
                   </div>
                   <div className="space-y-2">
                     <label className="text-[10px] font-bold text-slate-600 uppercase tracking-wider">Message</label>
                     <textarea required rows={5} value={form.message} onChange={e => setForm({ ...form, message: e.target.value })}
-                      placeholder="Tell us about your fleet..." className={`w-full border rounded-xl px-5 py-4 text-sm outline-none transition-colors resize-none ${
-                        mode === 'light' ? 'bg-slate-50 border-slate-200 text-black placeholder:text-slate-400' : 'bg-white/[0.03] border-white/[0.06] text-white placeholder:text-slate-700'
-                      } focus:border-orange-500/40`} />
+                      placeholder="Tell us about your fleet..." className={`w-full border rounded-xl px-5 py-4 text-sm outline-none transition-colors resize-none ${mode === 'light' ? 'bg-slate-50 border-slate-200 text-black placeholder:text-slate-400' : 'bg-white/[0.03] border-white/[0.06] text-white placeholder:text-slate-700'
+                        } focus:border-orange-500/40`} />
                   </div>
                   <button disabled={contactStatus === 'sending'}
                     className="w-full py-6 bg-orange-600 text-white font-black uppercase text-[13px] tracking-[0.2em] rounded-xl flex items-center justify-center gap-3 hover:bg-neutral-800 transition-all active:scale-[0.98] disabled:opacity-50 font-poppins">
@@ -773,33 +781,28 @@ export default function Landing() {
           </div>
         </section>
 
-        <section className={`py-24 sm:py-32 px-6 transition-colors duration-500 ${
-          mode === 'light' ? 'bg-gradient-to-t from-orange-50/50 to-transparent' : 'bg-gradient-to-t from-black via-transparent to-transparent'
-        }`}>
+        <section className={`py-24 sm:py-32 px-6 transition-colors duration-500 ${mode === 'light' ? 'bg-gradient-to-t from-orange-50/50 to-transparent' : 'bg-gradient-to-t from-black via-transparent to-transparent'
+          }`}>
           <div className="max-w-4xl mx-auto text-center space-y-10">
-            <h2 className={`text-4xl sm:text-7xl font-black tracking-tight uppercase leading-[0.85] transition-colors duration-500 ${
-              mode === 'light' ? 'text-black' : 'text-white'
-            }`}>
+            <h2 className={`text-4xl sm:text-7xl font-black tracking-tight uppercase leading-[0.85] transition-colors duration-500 ${mode === 'light' ? 'text-black' : 'text-white'
+              }`}>
               READY TO<br /><span className="text-orange-500">SCALE?</span>
             </h2>
-            <p className={`text-lg max-w-lg mx-auto transition-colors duration-500 ${
-              mode === 'light' ? 'text-slate-600' : 'text-slate-500'
-            }`}>Join operators leveraging the SARIMAX forecasting engine for smarter fleet decisions.</p>
+            <p className={`text-lg max-w-lg mx-auto transition-colors duration-500 ${mode === 'light' ? 'text-slate-600' : 'text-slate-500'
+              }`}>Join operators leveraging the SARIMAX forecasting engine for smarter fleet decisions.</p>
             <div className="flex flex-wrap justify-center gap-6">
               <Link to={user ? '/dashboard' : '/register'} className="px-12 py-5 bg-orange-500 text-white font-black rounded-2xl uppercase text-[13px] tracking-[0.2em] hover:bg-neutral-800 transition-all font-poppins shadow-xl shadow-orange-500/20">
                 {user ? 'Access Intelligence' : 'Start Free'}
               </Link>
-              <button onClick={() => navigate('/docs')} className={`px-12 py-5 border font-black rounded-2xl uppercase text-[13px] tracking-[0.2em] transition-all font-poppins ${
-                mode === 'light' ? 'border-black/10 text-black hover:bg-black hover:text-white' : 'border-white/20 text-white hover:bg-white hover:text-black'
-              }`}>Documentation</button>
+              <button onClick={() => navigate('/docs')} className={`px-12 py-5 border font-black rounded-2xl uppercase text-[13px] tracking-[0.2em] transition-all font-poppins ${mode === 'light' ? 'border-black/10 text-black hover:bg-black hover:text-white' : 'border-white/20 text-white hover:bg-white hover:text-black'
+                }`}>Documentation</button>
             </div>
           </div>
         </section>
 
         {/* ══════════ FOOTER ══════════ */}
-        <footer className={`py-12 px-6 md:px-16 border-t transition-colors duration-500 ${
-          mode === 'light' ? 'bg-white border-slate-100' : 'bg-black border-white/[0.04]'
-        }`}>
+        <footer className={`py-12 px-6 md:px-16 border-t transition-colors duration-500 ${mode === 'light' ? 'bg-white border-slate-100' : 'bg-black border-white/[0.04]'
+          }`}>
           <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
             <div className={`flex items-center gap-3 ${mode === 'light' ? 'text-black' : 'text-white'}`}>
               <div className="w-8 h-8 rounded-lg bg-orange-500 flex items-center justify-center"><Activity size={14} className="text-black" /></div>
@@ -810,9 +813,8 @@ export default function Landing() {
               <button onClick={() => scrollTo('features')} className="text-[10px] font-bold text-slate-500 uppercase tracking-wider hover:text-orange-500 transition-colors">Features</button>
               <Link to="/docs" className="text-[10px] font-bold text-slate-500 uppercase tracking-wider hover:text-orange-500 transition-colors">Docs</Link>
               <button onClick={() => scrollTo('contact')} className="text-[10px] font-bold text-slate-500 uppercase tracking-wider hover:text-orange-500 transition-colors">Contact</button>
-              <a href="https://github.com/SachinYadav2446/Taxi-Demand-Forecasting-System-" target="_blank" rel="noopener noreferrer" className={`text-[10px] font-bold uppercase tracking-wider transition-colors ${
-                mode === 'light' ? 'text-slate-500 hover:text-black' : 'text-slate-500 hover:text-white'
-              }`}>Source</a>
+              <a href="https://github.com/SachinYadav2446/Taxi-Demand-Forecasting-System-" target="_blank" rel="noopener noreferrer" className={`text-[10px] font-bold uppercase tracking-wider transition-colors ${mode === 'light' ? 'text-slate-500 hover:text-black' : 'text-slate-500 hover:text-white'
+                }`}>Source</a>
             </div>
 
             <div className="flex items-center gap-6">
@@ -825,7 +827,7 @@ export default function Landing() {
         </footer>
       </main>
       <AnimatePresence>
-        {activeFeature && <FeatureModal feature={activeFeature} mode={mode} onClose={() => setActiveFeature(null)} />}
+        {activeFeature && <FeatureModal feature={activeFeature} mode={mode} user={user} onClose={() => setActiveFeature(null)} />}
       </AnimatePresence>
     </div>
   );
