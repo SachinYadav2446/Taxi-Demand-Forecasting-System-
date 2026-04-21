@@ -6,7 +6,7 @@ import { api } from '../lib/axios';
 import {
   Building2, Mail, MapPin, ShieldCheck, UserRound, Users,
   Settings2, X, Loader2, AlertTriangle, Activity, Calendar,
-  ChevronRight, ArrowLeft
+  ChevronRight, ArrowLeft, LogOut
 } from 'lucide-react';
 
 /* ─── Edit Profile Modal ─── */
@@ -103,12 +103,45 @@ function EditProfileModal({ user, onClose }) {
   );
 }
 
+function LogoutConfirmModal({ onConfirm, onClose }) {
+  return (
+    <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={onClose} />
+      <div className="relative w-full max-w-sm animate-in zoom-in-95 fade-in duration-300">
+        <div className="rounded-[32px] border border-[#222] bg-[#0a0a0a] overflow-hidden shadow-[0_20px_60px_rgba(0,0,0,0.8)] p-8 text-center">
+          <div className="w-16 h-16 rounded-2xl bg-red-500/10 text-red-500 flex items-center justify-center mx-auto mb-6">
+            <LogOut size={32} />
+          </div>
+          <h3 className="text-xl font-black text-white mb-2">Sign Out?</h3>
+          <p className="text-slate-500 text-sm mb-8 font-medium">Are you sure you want to terminate your current session?</p>
+
+          <div className="flex flex-col gap-3">
+            <button
+              onClick={onConfirm}
+              className="w-full py-4 rounded-2xl bg-red-500 text-white text-sm font-black hover:bg-red-600 transition-all shadow-[0_10px_20px_rgba(239,68,68,0.2)]"
+            >
+              Yes, Sign Out
+            </button>
+            <button
+              onClick={onClose}
+              className="w-full py-4 rounded-2xl bg-[#111] border border-[#222] text-sm font-bold text-slate-400 hover:bg-[#151515] transition-all"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ─── Main Profile Page ─── */
 export default function ProfilePage() {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
   const { mode } = useTheme();
   const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [health, setHealth] = useState({ api: 'checking', model: 'checking', intelligence: 'checking' });
   const [zones, setZones] = useState([]);
 
@@ -153,11 +186,19 @@ export default function ProfilePage() {
   return (
     <div className={`min-h-screen font-poppins ${bg} ${textPrimary} transition-colors duration-500 pb-20`}>
       {isEditingProfile && <EditProfileModal user={user} onClose={() => setIsEditingProfile(false)} />}
+      {isLogoutModalOpen && (
+        <LogoutConfirmModal
+          onConfirm={() => {
+            logout();
+            navigate('/login');
+          }}
+          onClose={() => setIsLogoutModalOpen(false)}
+        />
+      )}
 
       {/* Header */}
-      <div className={`sticky top-0 z-50 border-b backdrop-blur-xl px-6 py-4 flex items-center justify-between transition-colors duration-500 ${
-        mode === 'light' ? 'bg-white/80 border-slate-100' : 'bg-[#050505]/80 border-[#222]'
-      }`}>
+      <div className={`sticky top-0 z-50 border-b backdrop-blur-xl px-6 py-4 flex items-center justify-between transition-colors duration-500 ${mode === 'light' ? 'bg-white/80 border-slate-100' : 'bg-[#050505]/80 border-[#222]'
+        }`}>
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-lg bg-orange-500 flex items-center justify-center shadow-lg shadow-orange-500/20">
             <Activity size={14} className="text-black" />
@@ -166,11 +207,10 @@ export default function ProfilePage() {
         </div>
         <button
           onClick={() => navigate('/')}
-          className={`flex items-center gap-2 text-sm font-bold px-4 py-2 rounded-xl border transition-all ${
-            mode === 'light'
+          className={`flex items-center gap-2 text-sm font-bold px-4 py-2 rounded-xl border transition-all ${mode === 'light'
               ? 'border-slate-200 text-slate-600 hover:bg-slate-50'
               : 'border-[#222] text-slate-400 hover:bg-[#111]'
-          }`}
+            }`}
         >
           <ArrowLeft size={16} /> Back to Home
         </button>
@@ -210,13 +250,23 @@ export default function ProfilePage() {
               </div>
             </div>
 
-            <button
-              onClick={() => setIsEditingProfile(true)}
-              className="px-6 py-2.5 rounded-xl border border-orange-500/30 bg-orange-500/5 text-orange-400 text-sm font-bold hover:bg-orange-500/10 hover:border-orange-500/50 transition-all flex items-center gap-2 group"
-            >
-              <Settings2 size={16} className="group-hover:rotate-45 transition-transform" />
-              Configure Profile
-            </button>
+            <div className="flex flex-col sm:flex-row items-center gap-3">
+              <button
+                onClick={() => setIsEditingProfile(true)}
+                className="w-full sm:w-auto px-6 py-2.5 rounded-xl border border-orange-500/30 bg-orange-500/5 text-orange-400 text-sm font-bold hover:bg-orange-500/10 hover:border-orange-500/50 transition-all flex items-center justify-center gap-2 group"
+              >
+                <Settings2 size={16} className="group-hover:rotate-45 transition-transform" />
+                Configure Profile
+              </button>
+
+              <button
+                onClick={() => setIsLogoutModalOpen(true)}
+                className="w-full sm:w-auto px-6 py-2.5 rounded-xl border border-red-500/30 bg-red-500/5 text-red-500 text-sm font-bold hover:bg-red-500/10 hover:border-red-500/50 transition-all flex items-center justify-center gap-2 group"
+              >
+                <LogOut size={16} className="group-hover:-translate-x-1 transition-transform" />
+                Sign Out
+              </button>
+            </div>
           </div>
         </div>
 
@@ -294,8 +344,8 @@ export default function ProfilePage() {
                   <span className={`text-3xl font-black ${textPrimary}`}>
                     {health.api === 'online'
                       ? (user?.role === 'operator'
-                          ? (user?.fleet_size >= 100 ? 'Tier 1' : user?.fleet_size >= 50 ? 'Tier 2' : 'Tier 3')
-                          : 'Tier 3')
+                        ? (user?.fleet_size >= 100 ? 'Tier 1' : user?.fleet_size >= 50 ? 'Tier 2' : 'Tier 3')
+                        : 'Pro Active')
                       : 'Offline'}
                   </span>
                   <span className={`text-sm font-bold mb-1 flex items-center gap-1 ${health.api === 'online' ? 'text-orange-500' : 'text-red-500'}`}>
