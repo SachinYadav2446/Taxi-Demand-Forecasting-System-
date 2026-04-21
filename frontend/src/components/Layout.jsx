@@ -157,11 +157,11 @@ export default function Layout() {
 
 
   const isDark = mode !== 'light';
-  const textPrimary = 'text-white';
+  const textPrimary = isDark ? 'text-white' : 'text-slate-900';
   const textMuted = 'text-slate-500';
 
   return (
-    <div className="min-h-screen bg-[#020202] text-white flex font-poppins selection:bg-orange-500/30 overflow-hidden relative">
+    <div className={`min-h-screen ${isDark ? 'bg-[#020202] text-white' : 'bg-slate-50 text-slate-900'} flex font-poppins selection:bg-orange-500/30 overflow-hidden relative`}>
       {isLogoutModalOpen && (
         <LogoutConfirmModal
           onConfirm={() => {
@@ -175,10 +175,10 @@ export default function Layout() {
       <div className="fixed top-1/2 -translate-y-1/2 left-0 z-[60] flex items-center pointer-events-none">
         <button
           onClick={() => setIsSidebarOpen(true)}
-          className={`pointer-events-auto ml-2 p-3.5 rounded-2xl bg-[#0a0a0b]/90 border border-white/[0.08] backdrop-blur-3xl text-slate-400 hover:text-orange-500 hover:border-orange-500/30 transition-all shadow-[0_0_40px_rgba(0,0,0,0.5)] ${isSidebarOpen ? 'opacity-0 scale-75 -translate-x-12' : 'opacity-100 scale-100 translate-x-0'} duration-[800ms] flex flex-col items-center gap-4 py-8 group overflow-hidden`}
+          className={`pointer-events-auto ml-2 p-3.5 rounded-2xl border backdrop-blur-3xl transition-all shadow-xl hover:text-orange-500 hover:border-orange-500/30 ${isDark ? 'bg-[#0a0a0b]/90 border-white/[0.08] text-slate-400' : 'bg-white/90 border-black/10 text-slate-600'} ${isSidebarOpen ? 'opacity-0 scale-75 -translate-x-12' : 'opacity-100 scale-100 translate-x-0'} duration-[800ms] flex flex-col items-center gap-4 py-8 group overflow-hidden`}
         >
           <ChevronRight size={20} className="animate-pulse group-hover:text-orange-500" />
-          <span className="text-[10px] font-bold uppercase tracking-[0.2em] [writing-mode:vertical-lr] rotate-180 group-hover:text-white transition-colors">Workspace</span>
+          <span className="text-[10px] font-bold uppercase tracking-[0.2em] [writing-mode:vertical-lr] rotate-180 group-hover:text-amber-500 transition-colors">Workspace</span>
         </button>
       </div>
 
@@ -187,7 +187,7 @@ export default function Layout() {
           SIDEBAR NAVIGATION (Desktop)
          ══════════════════════════════════════════ */}
       <aside
-        className={`fixed left-0 top-0 bottom-0 z-50 w-[260px] hidden lg:flex flex-col border-r border-white/[0.05] bg-[#080808] transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full shadow-none'}`}
+        className={`fixed left-0 top-0 bottom-0 z-50 w-[260px] hidden lg:flex flex-col border-r transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] ${isDark ? 'border-white/[0.05] bg-[#080808]' : 'border-black/5 bg-white'} ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full shadow-none'}`}
       >
         <div className="absolute inset-0 bg-gradient-to-b from-orange-500/[0.02] to-transparent pointer-events-none" />
 
@@ -198,7 +198,7 @@ export default function Layout() {
               <Activity size={20} className="text-black" />
             </div>
             <div className="flex flex-col">
-              <span className="font-bold text-[17px] tracking-tight text-white leading-none uppercase">DemandSight</span>
+              <span className={`font-bold text-[17px] tracking-tight leading-none uppercase ${isDark ? 'text-white' : 'text-slate-900'}`}>DemandSight</span>
               <span className="text-[9px] font-semibold tracking-[0.25em] text-orange-500/60 uppercase mt-1">Intelligence</span>
             </div>
           </div>
@@ -207,7 +207,7 @@ export default function Layout() {
         {/* Retractable Close Button (Vertically Centered on edge) */}
         <button
           onClick={() => setIsSidebarOpen(false)}
-          className={`absolute top-1/2 -translate-y-1/2 -right-4 z-50 w-8 h-12 flex items-center justify-center rounded-r-xl bg-[#080808] border border-white/[0.05] border-l-0 text-slate-500 hover:text-orange-500 hover:w-10 transition-all group ${isSidebarOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+          className={`absolute top-1/2 -translate-y-1/2 -right-4 z-50 w-8 h-12 flex items-center justify-center rounded-r-xl border-l-0 transition-all group ${isDark ? 'bg-[#080808] border-white/[0.05] text-slate-500 hover:text-orange-500' : 'bg-white border-black/5 text-slate-600 hover:text-orange-600'} hover:w-10 ${isSidebarOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
         >
           <ChevronLeft size={16} className="group-hover:-translate-x-0.5 transition-transform" />
         </button>
@@ -223,7 +223,7 @@ export default function Layout() {
                 to={item.path}
                 onMouseEnter={() => setHoveredItem(item.label)}
                 onMouseLeave={() => setHoveredItem(null)}
-                className={`relative flex items-center gap-4 px-4 py-3.5 rounded-2xl transition-all duration-300 group overflow-hidden ${active ? 'text-white' : 'text-slate-500 hover:text-white hover:bg-white/[0.02]'
+                className={`relative flex items-center gap-4 px-4 py-3.5 rounded-2xl transition-all duration-300 group overflow-hidden ${active ? (isDark ? 'text-white' : 'text-slate-900') : (isDark ? 'text-slate-500 hover:text-white hover:bg-white/[0.02]' : 'text-slate-600 hover:text-slate-900 hover:bg-black/5')
                   }`}
               >
                 {active && (
@@ -253,20 +253,20 @@ export default function Layout() {
         </nav>
 
         {/* User / Terminate Session */}
-        <div className="p-4 border-t border-white/[0.05] shrink-0 bg-black/40 backdrop-blur-3xl">
+        <div className={`p-4 border-t shrink-0 backdrop-blur-3xl ${isDark ? 'border-white/[0.05] bg-black/40' : 'border-black/5 bg-slate-50/80'}`}>
           <div className="flex items-center gap-3 px-3 py-3 mb-2">
-            <div className="w-10 h-10 rounded-2xl bg-black/60 border border-white/10 flex items-center justify-center group overflow-hidden relative">
+            <div className={`w-10 h-10 rounded-2xl border flex items-center justify-center group overflow-hidden relative ${isDark ? 'bg-black/60 border-white/10' : 'bg-white border-slate-200'}`}>
               <User size={18} className="text-slate-500 group-hover:text-orange-500 transition-colors" />
               <div className="absolute inset-0 bg-orange-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
             </div>
             <div className="flex flex-col truncate">
-              <span className="text-[13px] font-bold text-white truncate">{user.name || user.email}</span>
+              <span className={`text-[13px] font-bold truncate ${isDark ? 'text-white' : 'text-slate-900'}`}>{user.name || user.email}</span>
               <span className="text-[9px] text-orange-500/60 font-bold uppercase tracking-widest">{user.role}</span>
             </div>
           </div>
           <button
             onClick={() => setIsLogoutModalOpen(true)}
-            className="w-full flex items-center justify-center gap-2 px-4 py-3 text-[10px] font-bold uppercase tracking-widest rounded-xl transition-all border border-white/[0.05] text-slate-500 hover:text-red-500 hover:bg-red-500/10 hover:border-red-500/20 bg-black/40"
+            className={`w-full flex items-center justify-center gap-2 px-4 py-3 text-[10px] font-bold uppercase tracking-widest rounded-xl transition-all border hover:text-red-500 hover:bg-red-500/10 hover:border-red-500/20 ${isDark ? 'border-white/[0.05] text-slate-500 bg-black/40' : 'border-slate-200 text-slate-600 bg-white'}`}
           >
             <LogOut size={14} />
             <span>Log Out</span>
@@ -275,12 +275,12 @@ export default function Layout() {
       </aside>
 
       {/* Mobile Header (Fixed Top) */}
-      <header className="lg:hidden fixed top-0 left-0 right-0 z-40 px-5 py-4 border-b border-white/[0.05] flex justify-between items-center backdrop-blur-3xl bg-black/80">
+      <header className={`lg:hidden fixed top-0 left-0 right-0 z-40 px-5 py-4 border-b flex justify-between items-center backdrop-blur-3xl ${isDark ? 'border-white/[0.05] bg-black/80' : 'border-black/5 bg-white/80'}`}>
         <Link to="/" className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-xl bg-orange-500 flex items-center justify-center shadow-lg">
             <Activity size={18} className="text-black" />
           </div>
-          <span className="font-bold uppercase tracking-tight text-white text-sm">DemandSight</span>
+          <span className={`font-bold uppercase tracking-tight text-sm ${isDark ? 'text-white' : 'text-slate-900'}`}>DemandSight</span>
         </Link>
         <button onClick={() => setIsLogoutModalOpen(true)} className="p-2 rounded-xl bg-red-500/10 text-red-500">
           <LogOut size={16} />
@@ -288,7 +288,7 @@ export default function Layout() {
       </header>
 
       {/* Mobile Nav (Fixed Bottom) */}
-      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 border-t border-white/[0.05] flex justify-around items-center px-4 py-4 backdrop-blur-3xl bg-black/90 pb-safe">
+      <nav className={`lg:hidden fixed bottom-0 left-0 right-0 z-50 border-t flex justify-around items-center px-4 py-4 backdrop-blur-3xl pb-safe ${isDark ? 'border-white/[0.05] bg-black/90' : 'border-black/5 bg-white/90'}`}>
         {navItems.map((item) => {
           const active = isNavActive(item, location);
           return (

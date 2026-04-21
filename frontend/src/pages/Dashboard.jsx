@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useOutletContext, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+import { useTheme } from '../context/ThemeContext';
 import { api } from '../lib/axios';
 import { Building2, Mail, MapPin, ShieldCheck, UserRound, Users, Settings2, X, Loader2, AlertTriangle, Car, Activity, Calendar, ChevronRight, TrendingUp, Zap, Star } from 'lucide-react';
 import FleetAllocation from '../components/FleetAllocation';
@@ -127,6 +128,8 @@ export default function Dashboard() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const { mode } = useTheme();
+  const isDark = mode !== 'light';
   const searchParams = new URLSearchParams(location.search);
   const activeTab = searchParams.get('tab') || 'analytics';
 
@@ -266,13 +269,13 @@ export default function Dashboard() {
 
           {/* Operational Watchlist Feature */}
           {user?.role === 'operator' && (
-            <section className="rounded-3xl border border-white/[0.08] backdrop-blur-2xl bg-gradient-to-br from-[#1a1a1a]/80 to-[#0a0a0a]/80 overflow-hidden p-6 relative shadow-2xl">
+            <section className={`rounded-3xl border backdrop-blur-2xl overflow-hidden p-6 relative shadow-2xl ${isDark ? 'border-white/[0.08] bg-gradient-to-br from-[#1a1a1a]/80 to-[#0a0a0a]/80' : 'border-slate-200 bg-white/80'}`}>
               <div className="absolute top-0 left-0 w-32 h-32 bg-orange-500/5 rounded-full blur-[50px] pointer-events-none" />
 
               <div className="flex items-center justify-between mb-8 relative z-10">
                 <div>
                   <p className="text-orange-400 text-[10px] font-bold uppercase tracking-[0.2em] mb-1">Fleet Monitor</p>
-                  <h2 className="text-2xl font-bold text-white">Priority Watchlist</h2>
+                  <h2 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>Priority Watchlist</h2>
                 </div>
                 <div className="flex items-center gap-3">
                   <div className="px-3 py-1 rounded-full bg-orange-500/5 border border-orange-500/10 text-[9px] font-bold text-orange-400 uppercase tracking-widest">
@@ -285,7 +288,7 @@ export default function Dashboard() {
                 {loadingWatchlist ? (
                   <div className="flex justify-center py-20"><Loader2 className="animate-spin text-orange-500 w-10 h-10" /></div>
                 ) : watchlist.length === 0 ? (
-                  <div className="text-center py-20 border-2 border-dashed border-white/[0.05] rounded-[40px] bg-white/[0.01]">
+                  <div className={`text-center py-20 border-2 border-dashed rounded-[40px] ${isDark ? 'border-white/[0.05] bg-white/[0.01]' : 'border-slate-200 bg-slate-50'}`}>
                     <p className="text-slate-500 font-semibold uppercase tracking-[0.2em] text-[10px]">No Pinned Zones</p>
                     <p className="text-[10px] text-slate-600 uppercase mt-4 font-bold tracking-tight">Pin target neighborhoods from the analytics deck to track live flux.</p>
                   </div>
@@ -301,8 +304,8 @@ export default function Dashboard() {
                             animate={{ opacity: 1, y: 0 }}
                             whileHover={{ y: -5 }}
                             className={`group relative p-6 rounded-[32px] border transition-all duration-500 overflow-hidden ${isHighSurge
-                              ? 'bg-[#0a0a0a] border-orange-500/20 shadow-2xl'
-                              : 'bg-black/40 border-white/[0.04] hover:border-white/[0.1] hover:bg-black/60'
+                              ? (isDark ? 'bg-[#0a0a0a] border-orange-500/20 shadow-2xl' : 'bg-white border-orange-500/30 shadow-xl')
+                              : (isDark ? 'bg-black/40 border-white/[0.04] hover:border-white/[0.1] hover:bg-black/60' : 'bg-slate-50 border-slate-200 hover:border-slate-300 hover:bg-white')
                               }`}
                           >
                             <div className={`absolute top-0 right-0 w-32 h-32 rounded-full blur-[60px] transition-all duration-700 ${isHighSurge ? 'bg-orange-500/[0.08] opacity-100' : 'bg-slate-500/[0.02] opacity-0 group-hover:opacity-100'
@@ -314,13 +317,13 @@ export default function Dashboard() {
                                   <span className={`text-[9px] font-bold uppercase tracking-[0.2em] mb-1.5 block ${isHighSurge ? 'text-orange-400/60' : 'text-slate-600'}`}>
                                     {item.borough}
                                   </span>
-                                  <h4 className="text-[16px] font-bold text-white tracking-tight leading-tight group-hover:text-orange-500/90 transition-colors">
+                                  <h4 className={`text-[16px] font-bold tracking-tight leading-tight group-hover:text-orange-500/90 transition-colors ${isDark ? 'text-white' : 'text-slate-900'}`}>
                                     {item.zone_name}
                                   </h4>
                                 </div>
                                 <button
                                   onClick={(e) => { e.preventDefault(); toggleWatchlist(item.location_id); }}
-                                  className="w-9 h-9 rounded-xl bg-black/40 border border-white/[0.05] flex items-center justify-center text-slate-600 hover:text-red-500 hover:bg-red-500/10 hover:border-red-500/20 transition-all font-sans"
+                                  className={`w-9 h-9 rounded-xl flex items-center justify-center text-slate-600 hover:text-red-500 hover:bg-red-500/10 hover:border-red-500/20 transition-all font-sans ${isDark ? 'bg-black/40 border-white/[0.05]' : 'bg-white border-slate-200'}`}
                                 >
                                   <X size={14} />
                                 </button>
@@ -333,7 +336,7 @@ export default function Dashboard() {
                                     Flux Intensity
                                   </p>
                                   <div className="flex items-baseline gap-2">
-                                    <span className="text-3xl font-bold text-white tracking-tighter tabular-nums">
+                                    <span className={`text-3xl font-bold tracking-tighter tabular-nums ${isDark ? 'text-white' : 'text-slate-900'}`}>
                                       {item.current_pickups.toLocaleString()}
                                     </span>
                                     <div className="flex items-center gap-1 text-[11px] font-bold text-orange-500/70">
@@ -372,7 +375,7 @@ export default function Dashboard() {
                       <div className="flex justify-center pt-2">
                         <button
                           onClick={() => setShowAllWatchlist(!showAllWatchlist)}
-                          className="group flex items-center gap-3 px-8 py-3 bg-white/[0.03] border border-white/[0.08] hover:border-orange-500/30 rounded-2xl text-[11px] font-bold uppercase tracking-widest text-slate-400 hover:text-white transition-all shadow-xl backdrop-blur-xl"
+                          className={`group flex items-center gap-3 px-8 py-3 border hover:border-orange-500/30 rounded-2xl text-[11px] font-bold uppercase tracking-widest transition-all shadow-xl backdrop-blur-xl ${isDark ? 'bg-white/[0.03] border-white/[0.08] text-slate-400 hover:text-white' : 'bg-white border-slate-200 text-slate-600 hover:text-slate-900'}`}
                         >
                           {showAllWatchlist ? 'Collapse Monitor' : `View Full Watchlist (${watchlist.length - 3} More)`}
                           <ChevronRight className={`transition-transform duration-500 ${showAllWatchlist ? '-rotate-90' : 'rotate-90'}`} size={16} />
@@ -392,7 +395,7 @@ export default function Dashboard() {
 
           {/* Mount operational algorithm only for Company/Operators who actually own fleet sizes */}
           {user?.role === 'operator' && (
-            <section className="rounded-3xl border border-white/[0.08] backdrop-blur-2xl bg-gradient-to-br from-[#1a1a1a]/80 to-[#0a0a0a]/80 overflow-hidden p-6 relative shadow-2xl">
+            <section className={`rounded-3xl border backdrop-blur-2xl overflow-hidden p-6 relative shadow-2xl ${isDark ? 'border-white/[0.08] bg-gradient-to-br from-[#1a1a1a]/80 to-[#0a0a0a]/80' : 'border-slate-200 bg-white/80'}`}>
               <div className="absolute top-0 right-0 w-32 h-32 bg-orange-500/5 rounded-full blur-[50px] pointer-events-none" />
               <p className="text-orange-400 text-xs font-semibold uppercase tracking-wider mb-4">Fleet Operations</p>
               <FleetAllocation fleetSize={user.fleet_size} hotspots={trends.top_zones} />
@@ -404,15 +407,15 @@ export default function Dashboard() {
       {activeTab === 'analytics' && (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
           {/* Integrated Geographic Intelligence Map */}
-          <section className="rounded-3xl border border-white/[0.08] backdrop-blur-2xl bg-gradient-to-br from-[#1a1a1a]/80 to-[#0a0a0a]/80 p-6 md:p-8 relative overflow-hidden shadow-2xl">
+          <section className={`rounded-3xl border backdrop-blur-2xl p-6 md:p-8 relative overflow-hidden shadow-2xl ${isDark ? 'border-white/[0.08] bg-gradient-to-br from-[#1a1a1a]/80 to-[#0a0a0a]/80' : 'border-slate-200 bg-white/80'}`}>
             <div className="absolute top-0 left-0 w-64 h-64 bg-orange-500/5 rounded-full blur-[100px] pointer-events-none" />
             <div className="mb-8 relative z-10">
               <p className="text-orange-400 text-xs font-semibold uppercase tracking-wider mb-3">Spatial Intelligence</p>
               <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
                 <div>
-                  <h2 className="text-2xl md:text-3xl font-bold text-white">Live Operations Map</h2>
-                  <p className="text-slate-400 mt-3 text-sm max-w-2xl leading-relaxed">
-                    Switch between <span className="text-white font-semibold">Live Zone Map</span> for precise geographic pickup density or <span className="text-white font-semibold">Live Area Map</span> for a proportional footprint of borough-wide demand gravity.
+                  <h2 className={`text-2xl md:text-3xl font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>Live Operations Map</h2>
+                  <p className={`${isDark ? 'text-slate-400' : 'text-slate-600'} mt-3 text-sm max-w-2xl leading-relaxed`}>
+                    Switch between <span className={`font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>Live Zone Map</span> for precise geographic pickup density or <span className={`font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>Live Area Map</span> for a proportional footprint of borough-wide demand gravity.
                   </p>
                 </div>
                 <div className="flex items-center gap-3">
@@ -427,16 +430,16 @@ export default function Dashboard() {
 
           {/* Trends Section */}
           <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="rounded-3xl border border-white/[0.08] backdrop-blur-2xl bg-gradient-to-br from-[#1a1a1a]/80 to-[#0a0a0a]/80 p-6 relative overflow-hidden shadow-2xl">
+            <div className={`rounded-3xl border backdrop-blur-2xl p-6 relative overflow-hidden shadow-2xl ${isDark ? 'border-white/[0.08] bg-gradient-to-br from-[#1a1a1a]/80 to-[#0a0a0a]/80' : 'border-slate-200 bg-white/80'}`}>
               <div className="absolute top-0 right-0 w-32 h-32 bg-orange-500/5 rounded-full blur-[50px] pointer-events-none" />
               <p className="text-orange-400 text-xs font-semibold uppercase tracking-wider mb-3">Surging Demand</p>
-              <h2 className="text-2xl font-bold text-white">Top 5 Hotspots (Past 7 Days)</h2>
-              <p className="text-slate-400 mt-2 text-sm leading-relaxed mb-6">
+              <h2 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>Top 5 Hotspots (Past 7 Days)</h2>
+              <p className={`mt-2 text-sm leading-relaxed mb-6 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
                 City-wide zones with the highest volume of pickups. Use this to position fleets dynamically for maximum revenue.
               </p>
               <div className="space-y-3">
                 {trends.top_zones.map((tz, i) => (
-                  <div key={tz.location_id} className="flex flex-row justify-between items-center bg-black/40 border border-white/[0.04] backdrop-blur-md rounded-2xl p-4 group hover:bg-black/80 transition-colors">
+                  <div key={tz.location_id} className={`flex flex-row justify-between items-center border backdrop-blur-md rounded-2xl p-4 group transition-colors ${isDark ? 'bg-black/40 border-white/[0.04] hover:bg-black/80' : 'bg-slate-50 border-slate-200 hover:bg-slate-100'}`}>
                     <div className="flex items-center gap-4">
                       {user?.role === 'operator' && (
                         <button
@@ -447,8 +450,8 @@ export default function Dashboard() {
                         </button>
                       )}
                       <div>
-                        <p className="text-white font-semibold">{i + 1}. {tz.zone_name}</p>
-                        <p className="text-slate-400 text-sm">{tz.borough}</p>
+                        <p className={`font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>{i + 1}. {tz.zone_name}</p>
+                        <p className={`text-sm ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{tz.borough}</p>
                       </div>
                     </div>
                     <div className="text-right">
@@ -461,16 +464,16 @@ export default function Dashboard() {
 
             </div>
 
-            <div className="rounded-3xl border border-white/[0.08] backdrop-blur-2xl bg-gradient-to-br from-[#1a1a1a]/80 to-[#0a0a0a]/80 p-6 relative overflow-hidden shadow-2xl">
+            <div className={`rounded-3xl border backdrop-blur-2xl p-6 relative overflow-hidden shadow-2xl ${isDark ? 'border-white/[0.08] bg-gradient-to-br from-[#1a1a1a]/80 to-[#0a0a0a]/80' : 'border-slate-200 bg-white/80'}`}>
               <div className="absolute bottom-0 right-0 w-32 h-32 bg-orange-500/5 rounded-full blur-[50px] pointer-events-none" />
               <p className="text-orange-400 text-xs font-semibold uppercase tracking-wider mb-3">Idle Areas</p>
-              <h2 className="text-2xl font-bold text-white">Lowest Traffic (Past 7 Days)</h2>
-              <p className="text-slate-400 mt-2 text-sm leading-relaxed mb-6">
+              <h2 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>Lowest Traffic (Past 7 Days)</h2>
+              <p className={`mt-2 text-sm leading-relaxed mb-6 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
                 Zones suffering from coverage gaps or naturally dead demand. Instruct fleets to keep moving if idle here.
               </p>
               <div className="space-y-3">
                 {trends.bottom_zones.map((bz, i) => (
-                  <div key={bz.location_id} className="flex flex-row justify-between items-center bg-black/40 border border-white/[0.04] backdrop-blur-md rounded-2xl p-4 hover:bg-black/80 transition-colors">
+                  <div key={bz.location_id} className={`flex flex-row justify-between items-center border backdrop-blur-md rounded-2xl p-4 transition-colors ${isDark ? 'bg-black/40 border-white/[0.04] hover:bg-black/80' : 'bg-slate-50 border-slate-200 hover:bg-slate-100'}`}>
                     <div className="flex items-center gap-4">
                       {user?.role === 'operator' && (
                         <button
@@ -481,8 +484,8 @@ export default function Dashboard() {
                         </button>
                       )}
                       <div>
-                        <p className="text-white font-semibold">{i + 1}. {bz.zone_name}</p>
-                        <p className="text-slate-400 text-sm">{bz.borough}</p>
+                        <p className={`font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>{i + 1}. {bz.zone_name}</p>
+                        <p className={`text-sm ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{bz.borough}</p>
                       </div>
                     </div>
                     <div className="text-right">
