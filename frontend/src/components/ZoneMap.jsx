@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo } from 'react';
 import { MapContainer, TileLayer, CircleMarker, Popup, useMap } from 'react-leaflet';
 import { Treemap, ResponsiveContainer, Tooltip as ChartTooltip, LineChart, Line, XAxis, YAxis, CartesianGrid } from 'recharts';
 import { X, Map as MapIcon, Grid3X3, CloudRain, Sun, Zap, Music, Trophy, Calendar } from 'lucide-react';
+import { useTheme } from '../context/ThemeContext';
 import { api } from '../lib/axios';
 import 'leaflet/dist/leaflet.css';
 
@@ -92,7 +93,9 @@ function ZoomHandler({ zoom }) {
 }
 
 export default function ZoneMap() {
-  const [viewMode, setViewMode] = useState('zone'); // 'zone' (Map) or 'area' (Treemap)
+  const [viewMode, setViewMode] = useState('zone'); // 'zone' or 'area'
+  const { mode } = useTheme();
+  const isDark = mode !== 'light';
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [hoveredZone, setHoveredZone] = useState(null);
@@ -174,7 +177,7 @@ export default function ZoneMap() {
 
   if (loading) {
     return (
-      <div className="h-[500px] rounded-2xl border border-[#222] bg-[#0a0a0a] flex items-center justify-center">
+      <div className={`h-[500px] rounded-2xl border flex items-center justify-center ${isDark ? 'border-white/[0.05] bg-[#0a0a0a]' : 'border-slate-200 bg-slate-50'}`}>
         <div className="animate-pulse flex flex-col items-center">
           <div className="h-10 w-10 border-4 border-orange-500 border-t-transparent rounded-full animate-spin mb-4" />
           <p className="text-slate-500 font-bold uppercase tracking-widest text-xs">Syncing Intelligence...</p>
@@ -187,23 +190,23 @@ export default function ZoneMap() {
     <div className="space-y-4">
       {/* View Toggle Controller */}
       <div className="flex items-center justify-between mb-4">
-        <div className="flex p-1 bg-[#111] rounded-xl border border-[#222]">
+        <div className={`flex p-1 rounded-xl border ${isDark ? 'bg-[#111] border-[#222]' : 'bg-slate-100 border-slate-200'}`}>
           <button
             onClick={() => setViewMode('zone')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all ${viewMode === 'zone' ? 'bg-[#222] text-orange-500 shadow-sm' : 'text-slate-500 hover:text-slate-300'
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all ${viewMode === 'zone' ? (isDark ? 'bg-[#222] text-orange-500 shadow-sm' : 'bg-white text-orange-500 shadow-sm') : (isDark ? 'text-slate-500 hover:text-slate-300' : 'text-slate-500 hover:text-slate-700')
               }`}
           >
             <MapIcon size={14} /> Live Zone Map
           </button>
           <button
             onClick={() => setViewMode('area')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all ${viewMode === 'area' ? 'bg-[#222] text-orange-500 shadow-sm' : 'text-slate-500 hover:text-slate-300'
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all ${viewMode === 'area' ? (isDark ? 'bg-[#222] text-orange-500 shadow-sm' : 'bg-white text-orange-500 shadow-sm') : (isDark ? 'text-slate-500 hover:text-slate-300' : 'text-slate-500 hover:text-slate-700')
               }`}
           >
             <Grid3X3 size={14} /> Live Area Map
           </button>
         </div>
-        <div className="hidden md:flex items-center gap-4 px-4 py-2 bg-[#111]/50 rounded-xl border border-[#222]/50">
+        <div className={`hidden md:flex items-center gap-4 px-4 py-2 rounded-xl border ${isDark ? 'bg-[#111]/50 border-[#222]/50' : 'bg-slate-50 border-slate-200'}`}>
           <div className="flex items-center gap-2">
             <div className="w-2 h-2 rounded-full bg-orange-500 animate-pulse" />
             <span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Live Engine Active</span>
@@ -211,7 +214,7 @@ export default function ZoneMap() {
         </div>
       </div>
 
-      <div className="relative rounded-2xl overflow-hidden border border-[#222] bg-[#050505]" style={{ height: '500px' }}>
+      <div className={`relative rounded-2xl overflow-hidden border ${isDark ? 'border-white/[0.05] bg-[#050505]' : 'border-slate-200 bg-white'}`} style={{ height: '500px' }}>
         {viewMode === 'zone' ? (
           /* --- LEAFLET MODE --- */
           <div className="relative w-full h-full">
@@ -227,7 +230,7 @@ export default function ZoneMap() {
               <FitBounds />
               <ZoomHandler zoom={zoom} />
               <TileLayer
-                url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+                url={isDark ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png" : "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"}
                 attribution='&copy; CARTO'
               />
               {zonesWithPositions.map((zone) => {
@@ -296,10 +299,10 @@ export default function ZoneMap() {
             </MapContainer>
 
             {/* Custom Vertical Zoom Controller */}
-            <div className="absolute top-1/2 -translate-y-1/2 right-6 z-[1000] flex flex-col items-center gap-4 py-6 px-3 bg-[#0a0a0b]/90 backdrop-blur-3xl border border-white/10 rounded-3xl shadow-2xl">
+            <div className={`absolute top-1/2 -translate-y-1/2 right-6 z-[1000] flex flex-col items-center gap-4 py-6 px-3 backdrop-blur-3xl border rounded-3xl shadow-2xl ${isDark ? 'bg-[#0a0a0b]/90 border-white/10' : 'bg-white/90 border-slate-200'}`}>
               <button
                 onClick={() => setZoom(prev => Math.min(prev + 1, 18))}
-                className="w-10 h-10 flex items-center justify-center rounded-2xl bg-[#111] border border-white/5 text-slate-400 hover:text-white hover:border-orange-500/30 transition-all font-bold text-xl"
+                className={`w-10 h-10 flex items-center justify-center rounded-2xl border transition-all font-bold text-xl hover:border-orange-500/30 ${isDark ? 'bg-[#111] border-white/5 text-slate-400 hover:text-white' : 'bg-slate-50 border-slate-200 text-slate-600 hover:text-slate-900'}`}
               >
                 +
               </button>
@@ -311,12 +314,12 @@ export default function ZoneMap() {
                   step="0.1"
                   value={zoom}
                   onChange={(e) => setZoom(parseFloat(e.target.value))}
-                  className="appearance-none w-1 h-32 bg-[#222] rounded-full [writing-mode:bt-lr] [-webkit-appearance:slider-vertical]"
+                  className={`appearance-none w-1 h-32 rounded-full [writing-mode:bt-lr] [-webkit-appearance:slider-vertical] ${isDark ? 'bg-[#222]' : 'bg-slate-300'}`}
                 />
               </div>
               <button
                 onClick={() => setZoom(prev => Math.max(prev - 1, 5))}
-                className="w-10 h-10 flex items-center justify-center rounded-2xl bg-[#111] border border-white/5 text-slate-400 hover:text-white hover:border-orange-500/30 transition-all font-bold text-xl"
+                className={`w-10 h-10 flex items-center justify-center rounded-2xl border transition-all font-bold text-xl hover:border-orange-500/30 ${isDark ? 'bg-[#111] border-white/5 text-slate-400 hover:text-white' : 'bg-slate-50 border-slate-200 text-slate-600 hover:text-slate-900'}`}
               >
                 -
               </button>
@@ -360,8 +363,8 @@ export default function ZoneMap() {
 
         {/* Zone Tooltip (Leaflet Hover) */}
         {viewMode === 'zone' && hoveredZone && (
-          <div className="absolute top-24 right-20 z-[1000] bg-[#111]/90 backdrop-blur-md border border-[#333] rounded-xl px-4 py-3 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
-            <p className="text-white font-bold text-sm">{hoveredZone.name}</p>
+          <div className={`absolute top-24 right-20 z-[1000] backdrop-blur-md border rounded-xl px-4 py-3 shadow-2xl animate-in fade-in zoom-in-95 duration-200 ${isDark ? 'bg-[#111]/90 border-white/10' : 'bg-white/90 border-slate-200'}`}>
+            <p className={`font-bold text-sm ${isDark ? 'text-white' : 'text-slate-900'}`}>{hoveredZone.name}</p>
             <p className="text-slate-500 font-bold text-[10px] uppercase tracking-widest">{hoveredZone.borough}</p>
             <p className="text-orange-500 font-black text-xl mt-1">{(hoveredZone.pickups || 0).toLocaleString()} <span className="text-[10px] text-slate-400 font-bold">RIDES</span></p>
           </div>

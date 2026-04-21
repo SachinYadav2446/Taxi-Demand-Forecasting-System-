@@ -1,8 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
+import { useTheme } from '../context/ThemeContext';
 import { api } from '../lib/axios';
 import { MapPin, Navigation, TrendingUp, Zap, Search } from 'lucide-react';
 
 export default function SmartDispatch() {
+  const { mode } = useTheme();
+  const isDark = mode !== 'light';
   const [zones, setZones] = useState([]);
   const [selectedZone, setSelectedZone] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
@@ -69,14 +72,14 @@ export default function SmartDispatch() {
   };
 
   return (
-    <div className="rounded-[32px] border border-[#1f1f1f] bg-[radial-gradient(ellipse_at_top,rgba(16,185,129,0.08),transparent_50%),#090909] p-6 shadow-[0_10px_40px_rgba(0,0,0,0.45)]">
+    <div className={`rounded-[32px] border p-6 shadow-2xl ${isDark ? 'border-[#1f1f1f] bg-[radial-gradient(ellipse_at_top,rgba(249,115,22,0.08),transparent_50%),#090909]' : 'border-slate-200 bg-[radial-gradient(ellipse_at_top,rgba(249,115,22,0.05),transparent_50%),#fff]'}`}>
       <div className="flex items-center gap-3 mb-6">
         <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-500/10 text-orange-400">
-          <Zap size={20} className="drop-shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+          <Zap size={20} />
         </div>
         <div>
-          <h2 className="text-xl font-bold text-white">AI Smart Dispatch</h2>
-          <p className="text-sm text-slate-400">Find the most profitable nearby zones.</p>
+          <h2 className={`text-xl font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>AI Smart Dispatch</h2>
+          <p className={`text-sm ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Find the most profitable nearby zones.</p>
         </div>
       </div>
       
@@ -97,19 +100,19 @@ export default function SmartDispatch() {
                }}
                onFocus={() => setIsDropdownOpen(true)}
                placeholder="Search zones..."
-               className="block w-full pl-10 pr-4 py-3 border border-[#333] rounded-2xl text-white focus:outline-none focus:ring-2 focus:ring-orange-500 bg-[#111] font-medium placeholder:text-slate-600"
+               className={`block w-full pl-10 pr-4 py-3 border rounded-2xl focus:outline-none focus:ring-2 focus:ring-orange-500 font-medium ${isDark ? 'border-[#333] bg-[#111] text-white placeholder:text-slate-600' : 'border-slate-200 bg-white text-slate-900 placeholder:text-slate-400'}`}
              />
            </div>
 
            {isDropdownOpen && (
-             <div className="absolute z-40 mt-2 w-full max-h-60 overflow-y-auto rounded-2xl border border-[#333] bg-[#111] shadow-[0_20px_50px_rgba(0,0,0,0.8)]">
+             <div className={`absolute z-40 mt-2 w-full max-h-60 overflow-y-auto rounded-2xl border shadow-2xl ${isDark ? 'border-[#333] bg-[#111]' : 'border-slate-200 bg-white'}`}>
                {filteredZones.length > 0 ? filteredZones.map((z) => (
                  <button
                    key={z.location_id}
                    onClick={() => handleZoneSelect(z)}
-                   className="w-full text-left px-4 py-3 hover:bg-orange-500/10 transition-colors flex justify-between items-center border-b border-[#1a1a1a] last:border-0 cursor-pointer"
+                   className={`w-full text-left px-4 py-3 hover:bg-orange-500/10 transition-colors flex justify-between items-center border-b last:border-0 cursor-pointer ${isDark ? 'border-[#1a1a1a]' : 'border-slate-100'}`}
                  >
-                   <span className="text-white font-medium text-sm">{z.zone_name}</span>
+                   <span className={`font-medium text-sm ${isDark ? 'text-white' : 'text-slate-900'}`}>{z.zone_name}</span>
                    <span className="text-slate-500 text-xs">{z.borough}</span>
                  </button>
                )) : (
@@ -150,17 +153,17 @@ export default function SmartDispatch() {
           <p className="text-[11px] font-bold uppercase tracking-wider text-orange-400">🔥 Top 3 Nearby Hotspots</p>
           <div className="grid gap-4 md:grid-cols-3">
             {recommendations.map((rec, index) => (
-              <div key={rec.location_id} className={`rounded-2xl border p-5 transition-all ${index === 0 ? 'border-orange-500/40 bg-gradient-to-br from-orange-500/10 to-transparent shadow-[0_0_20px_rgba(16,185,129,0.1)]' : 'border-[#222] bg-[#0c0c0c]'}`}>
+              <div key={rec.location_id} className={`rounded-2xl border p-5 transition-all ${index === 0 ? `border-orange-500/40 bg-gradient-to-br from-orange-500/10 to-transparent shadow-xl` : (isDark ? 'border-[#222] bg-[#0c0c0c]' : 'border-slate-200 bg-slate-50')}`}>
                 <div className="flex items-center justify-between mb-3">
-                   <div className="flex items-center justify-center w-6 h-6 rounded-full bg-black border border-[#333] text-xs font-bold text-slate-300">
+                   <div className={`flex items-center justify-center w-6 h-6 rounded-full border text-xs font-bold ${isDark ? 'bg-black border-[#333] text-slate-300' : 'bg-white border-slate-200 text-slate-600'}`}>
                      #{index + 1}
                    </div>
                    <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">{rec.borough}</span>
                 </div>
-                <h3 className="font-bold text-lg text-white leading-tight mb-4">{rec.zone_name}</h3>
+                <h3 className={`font-bold text-lg leading-tight mb-4 ${isDark ? 'text-white' : 'text-slate-900'}`}>{rec.zone_name}</h3>
                 
                 <div className="flex items-center justify-between mt-auto">
-                   <span className="text-sm text-slate-400">Next Hour</span>
+                   <span className={`text-sm ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Next Hour</span>
                    <div className="flex items-center gap-1.5 text-orange-400">
                      <TrendingUp size={16} />
                      <span className="font-black text-lg">{rec.forecasted_pickups}</span>
