@@ -268,7 +268,7 @@ export default function Dashboard() {
           {user?.role === 'operator' && (
             <section className="rounded-3xl border border-white/[0.08] backdrop-blur-2xl bg-gradient-to-br from-[#1a1a1a]/80 to-[#0a0a0a]/80 overflow-hidden p-6 relative shadow-2xl">
               <div className="absolute top-0 left-0 w-32 h-32 bg-orange-500/5 rounded-full blur-[50px] pointer-events-none" />
-              
+
               <div className="flex items-center justify-between mb-8 relative z-10">
                 <div>
                   <p className="text-orange-400 text-[10px] font-bold uppercase tracking-[0.2em] mb-1">Fleet Monitor</p>
@@ -300,15 +300,13 @@ export default function Dashboard() {
                             initial={{ opacity: 0, y: 15 }}
                             animate={{ opacity: 1, y: 0 }}
                             whileHover={{ y: -5 }}
-                            className={`group relative p-6 rounded-[32px] border transition-all duration-500 overflow-hidden ${
-                              isHighSurge 
-                              ? 'bg-[#0a0a0a] border-orange-500/20 shadow-2xl' 
+                            className={`group relative p-6 rounded-[32px] border transition-all duration-500 overflow-hidden ${isHighSurge
+                              ? 'bg-[#0a0a0a] border-orange-500/20 shadow-2xl'
                               : 'bg-black/40 border-white/[0.04] hover:border-white/[0.1] hover:bg-black/60'
-                            }`}
+                              }`}
                           >
-                            <div className={`absolute top-0 right-0 w-32 h-32 rounded-full blur-[60px] transition-all duration-700 ${
-                              isHighSurge ? 'bg-orange-500/[0.08] opacity-100' : 'bg-slate-500/[0.02] opacity-0 group-hover:opacity-100'
-                            }`} />
+                            <div className={`absolute top-0 right-0 w-32 h-32 rounded-full blur-[60px] transition-all duration-700 ${isHighSurge ? 'bg-orange-500/[0.08] opacity-100' : 'bg-slate-500/[0.02] opacity-0 group-hover:opacity-100'
+                              }`} />
 
                             <div className="relative z-10 h-full flex flex-col">
                               <div className="flex items-start justify-between mb-8">
@@ -320,7 +318,7 @@ export default function Dashboard() {
                                     {item.zone_name}
                                   </h4>
                                 </div>
-                                <button 
+                                <button
                                   onClick={(e) => { e.preventDefault(); toggleWatchlist(item.location_id); }}
                                   className="w-9 h-9 rounded-xl bg-black/40 border border-white/[0.05] flex items-center justify-center text-slate-600 hover:text-red-500 hover:bg-red-500/10 hover:border-red-500/20 transition-all font-sans"
                                 >
@@ -340,29 +338,27 @@ export default function Dashboard() {
                                     </span>
                                     <div className="flex items-center gap-1 text-[11px] font-bold text-orange-500/70">
                                       <TrendingUp size={11} />
-                                      <span>+{( (item.current_pickups % 5) + 2).toFixed(1)}%</span>
+                                      <span>+{((item.current_pickups % 5) + 2).toFixed(1)}%</span>
                                     </div>
                                   </div>
                                 </div>
 
                                 <div className="pt-4 border-t border-white/[0.04] flex items-center justify-between">
-                                  <div className={`px-3 py-1.5 rounded-xl text-[9px] font-bold uppercase tracking-widest ${
-                                    isHighSurge 
-                                    ? 'bg-orange-500/10 text-orange-500 border border-orange-500/20' 
+                                  <div className={`px-3 py-1.5 rounded-xl text-[9px] font-bold uppercase tracking-widest ${isHighSurge
+                                    ? 'bg-orange-500/10 text-orange-500 border border-orange-500/20'
                                     : 'bg-white/5 text-slate-500'
-                                  }`}>
+                                    }`}>
                                     {isHighSurge ? 'High Demand' : 'Stable'}
                                   </div>
 
                                   <div className="flex gap-1">
-                                     {[1,2,3,4,5].map(i => (
-                                       <div 
-                                         key={i} 
-                                         className={`h-2 w-1.5 rounded-full ${
-                                           i <= (isHighSurge ? 5 : 2) ? 'bg-orange-500/60' : 'bg-white/5'
-                                         }`} 
-                                       />
-                                     ))}
+                                    {[1, 2, 3, 4, 5].map(i => (
+                                      <div
+                                        key={i}
+                                        className={`h-2 w-1.5 rounded-full ${i <= (isHighSurge ? 5 : 2) ? 'bg-orange-500/60' : 'bg-white/5'
+                                          }`}
+                                      />
+                                    ))}
                                   </div>
                                 </div>
                               </div>
