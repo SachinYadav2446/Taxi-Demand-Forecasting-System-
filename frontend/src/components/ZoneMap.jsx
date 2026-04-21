@@ -159,15 +159,15 @@ export default function ZoneMap() {
 
   const getSimulatedHourlyData = (baseValue) => {
     const hours = [];
-    const baseHourTraffic = Math.floor(baseValue / 7 / 24) || 10; 
+    const baseHourTraffic = Math.floor(baseValue / 7 / 24) || 10;
     for (let i = 0; i < 24; i++) {
-        const mathPhase = Math.sin((i / 24) * Math.PI * 4);
-        const randJitter = (Math.random() * 0.4) + 0.8;
-        const val = Math.max(5, Math.floor(baseHourTraffic * (1 + (mathPhase * 0.6)) * randJitter));
-        hours.push({
-            time: i === 0 ? '12 AM' : i < 12 ? `${i} AM` : i === 12 ? '12 PM' : `${i-12} PM`,
-            demand: val
-        });
+      const mathPhase = Math.sin((i / 24) * Math.PI * 4);
+      const randJitter = (Math.random() * 0.4) + 0.8;
+      const val = Math.max(5, Math.floor(baseHourTraffic * (1 + (mathPhase * 0.6)) * randJitter));
+      hours.push({
+        time: i === 0 ? '12 AM' : i < 12 ? `${i} AM` : i === 12 ? '12 PM' : `${i - 12} PM`,
+        demand: val
+      });
     }
     return hours;
   };
@@ -190,26 +190,24 @@ export default function ZoneMap() {
         <div className="flex p-1 bg-[#111] rounded-xl border border-[#222]">
           <button
             onClick={() => setViewMode('zone')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all ${
-              viewMode === 'zone' ? 'bg-[#222] text-orange-500 shadow-sm' : 'text-slate-500 hover:text-slate-300'
-            }`}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all ${viewMode === 'zone' ? 'bg-[#222] text-orange-500 shadow-sm' : 'text-slate-500 hover:text-slate-300'
+              }`}
           >
             <MapIcon size={14} /> Live Zone Map
           </button>
           <button
             onClick={() => setViewMode('area')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all ${
-              viewMode === 'area' ? 'bg-[#222] text-orange-500 shadow-sm' : 'text-slate-500 hover:text-slate-300'
-            }`}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all ${viewMode === 'area' ? 'bg-[#222] text-orange-500 shadow-sm' : 'text-slate-500 hover:text-slate-300'
+              }`}
           >
             <Grid3X3 size={14} /> Live Area Map
           </button>
         </div>
         <div className="hidden md:flex items-center gap-4 px-4 py-2 bg-[#111]/50 rounded-xl border border-[#222]/50">
-           <div className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-orange-500 animate-pulse" />
-              <span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Live Engine Active</span>
-           </div>
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-orange-500 animate-pulse" />
+            <span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Live Engine Active</span>
+          </div>
         </div>
       </div>
 
@@ -287,8 +285,8 @@ export default function ZoneMap() {
                         <h4 className="font-bold text-sm text-[#111]">{event.name}</h4>
                         <p className="text-[10px] text-slate-500 mt-1 leading-tight">{event.description}</p>
                         <div className="mt-3 pt-2 border-t border-slate-100 flex items-center justify-between">
-                           <span className="text-[9px] font-bold text-slate-400 uppercase">Impact Score</span>
-                           <span className="text-xs font-black text-purple-600">+{Math.round((event.impact-1)*100)}%</span>
+                          <span className="text-[9px] font-bold text-slate-400 uppercase">Impact Score</span>
+                          <span className="text-xs font-black text-purple-600">+{Math.round((event.impact - 1) * 100)}%</span>
                         </div>
                       </div>
                     </Popup>
@@ -299,14 +297,14 @@ export default function ZoneMap() {
 
             {/* Custom Vertical Zoom Controller */}
             <div className="absolute top-1/2 -translate-y-1/2 right-6 z-[1000] flex flex-col items-center gap-4 py-6 px-3 bg-[#0a0a0b]/90 backdrop-blur-3xl border border-white/10 rounded-3xl shadow-2xl">
-              <button 
+              <button
                 onClick={() => setZoom(prev => Math.min(prev + 1, 18))}
                 className="w-10 h-10 flex items-center justify-center rounded-2xl bg-[#111] border border-white/5 text-slate-400 hover:text-white hover:border-orange-500/30 transition-all font-bold text-xl"
               >
                 +
               </button>
               <div className="h-40 w-1 flex justify-center py-2">
-                <input 
+                <input
                   type="range"
                   min="5"
                   max="18"
@@ -316,7 +314,7 @@ export default function ZoneMap() {
                   className="appearance-none w-1 h-32 bg-[#222] rounded-full [writing-mode:bt-lr] [-webkit-appearance:slider-vertical]"
                 />
               </div>
-              <button 
+              <button
                 onClick={() => setZoom(prev => Math.max(prev - 1, 5))}
                 className="w-10 h-10 flex items-center justify-center rounded-2xl bg-[#111] border border-white/5 text-slate-400 hover:text-white hover:border-orange-500/30 transition-all font-bold text-xl"
               >
@@ -327,18 +325,18 @@ export default function ZoneMap() {
         ) : (
           /* --- TREEMAP MODE --- */
           <div className="w-full h-full p-4">
-             <ResponsiveContainer width="100%" height="100%">
-               <Treemap
-                 data={treemapData}
-                 dataKey="value"
-                 aspectRatio={4 / 3}
-                 stroke="#fff"
-                 fill="#8884d8"
-                 content={<CustomizedContent coloring={HEATMAP_COLORS} onZoneClick={setSelectedZone} />}
-               >
-                 <ChartTooltip content={<AreaTooltip />} />
-               </Treemap>
-             </ResponsiveContainer>
+            <ResponsiveContainer width="100%" height="100%">
+              <Treemap
+                data={treemapData}
+                dataKey="value"
+                aspectRatio={4 / 3}
+                stroke="#fff"
+                fill="#8884d8"
+                content={<CustomizedContent coloring={HEATMAP_COLORS} onZoneClick={setSelectedZone} />}
+              >
+                <ChartTooltip content={<AreaTooltip />} />
+              </Treemap>
+            </ResponsiveContainer>
           </div>
         )}
 
@@ -372,17 +370,17 @@ export default function ZoneMap() {
         {/* Weather Intelligence Badge */}
         {weather && (
           <div className="absolute top-4 left-4 z-[1000] flex items-center gap-3 bg-[#0a0a0a]/90 backdrop-blur-xl border border-white/10 rounded-2xl px-4 py-2.5 shadow-[0_8px_32px_rgba(0,0,0,0.5)] animate-in slide-in-from-left-4 duration-500">
-             <div className="w-10 h-10 rounded-xl bg-orange-500/20 flex items-center justify-center border border-orange-500/30">
-               {weather.precip > 0 ? <CloudRain className="text-orange-500" size={20} /> : <Sun className="text-orange-500" size={20} />}
-             </div>
-             <div>
-               <div className="flex items-center gap-2">
-                 <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Intelligence Node</span>
-                 <div className="w-1 h-1 rounded-full bg-green-500 animate-pulse" />
-               </div>
-               <p className="text-white font-bold text-sm">{weather.condition} <span className="text-slate-500 text-xs font-medium">• {weather.temp}°C</span></p>
-               <p className="text-orange-400/80 text-[10px] font-bold uppercase tracking-tight">{weather.description}</p>
-             </div>
+            <div className="w-10 h-10 rounded-xl bg-orange-500/20 flex items-center justify-center border border-orange-500/30">
+              {weather.precip > 0 ? <CloudRain className="text-orange-500" size={20} /> : <Sun className="text-orange-500" size={20} />}
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Intelligence Node</span>
+                <div className="w-1 h-1 rounded-full bg-green-500 animate-pulse" />
+              </div>
+              <p className="text-white font-bold text-sm">{weather.condition} <span className="text-slate-500 text-xs font-medium">• {weather.temp}°C</span></p>
+              <p className="text-orange-400/80 text-[10px] font-bold uppercase tracking-tight">{weather.description}</p>
+            </div>
           </div>
         )}
 
@@ -402,49 +400,49 @@ export default function ZoneMap() {
       {/* Analytics Modal (Treemap Click) */}
       {selectedZone && (
         <div className="fixed inset-0 z-[5000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xl animate-in fade-in duration-300">
-           <div className="bg-[#0a0a0a] border border-[#222] rounded-[32px] w-full max-w-4xl shadow-[0_0_100px_rgba(0,0,0,0.8)] overflow-hidden flex flex-col scale-100 animate-in zoom-in-95 duration-300">
-              <div className="flex justify-between items-center px-8 py-6 border-b border-[#1a1a1a] bg-[#0d0d0d]">
-                 <div>
-                   <p className="text-orange-500 font-black tracking-wider text-[10px] uppercase mb-1">Deep Intelligence</p>
-                   <h3 className="text-white text-2xl font-black tracking-tight">{selectedZone.name}</h3>
-                 </div>
-                 <button 
-                  onClick={() => setSelectedZone(null)} 
-                  className="w-12 h-12 rounded-2xl bg-[#1a1a1a] border border-[#333] hover:border-orange-500/50 flex items-center justify-center text-slate-400 hover:text-white transition-all shadow-lg"
-                 >
-                    <X size={24} />
-                 </button>
+          <div className="bg-[#0a0a0a] border border-[#222] rounded-[32px] w-full max-w-4xl shadow-[0_0_100px_rgba(0,0,0,0.8)] overflow-hidden flex flex-col scale-100 animate-in zoom-in-95 duration-300">
+            <div className="flex justify-between items-center px-8 py-6 border-b border-[#1a1a1a] bg-[#0d0d0d]">
+              <div>
+                <p className="text-orange-500 font-black tracking-wider text-[10px] uppercase mb-1">Deep Intelligence</p>
+                <h3 className="text-white text-2xl font-black tracking-tight">{selectedZone.name}</h3>
               </div>
-              <div className="p-8 h-[450px] w-full bg-gradient-to-b from-[#0a0a0a] to-[#050505]">
-                 <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={getSimulatedHourlyData(selectedZone.value)}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#1a1a1a" vertical={false} />
-                      <XAxis dataKey="time" stroke="#444" tick={{fill: '#666', fontSize: 11, fontWeight: 'bold'}} tickMargin={12} minTickGap={25} />
-                      <YAxis stroke="#444" tick={{fill: '#666', fontSize: 11, fontWeight: 'bold'}} />
-                      <ChartTooltip 
-                        contentStyle={{ backgroundColor: '#0a0a0a', border: '1px solid #333', borderRadius: '16px', boxShadow: '0 10px 30px rgba(0,0,0,0.5)' }}
-                        itemStyle={{ color: '#f97316', fontWeight: '900', fontSize: '14px' }}
-                      />
-                      <Line 
-                        type="monotone" 
-                        dataKey="demand" 
-                        stroke="#f97316" 
-                        strokeWidth={5} 
-                        dot={false} 
-                        activeDot={{ r: 10, fill: '#f97316', stroke: '#fff', strokeWidth: 3, shadow: '0 0 20px rgba(249,115,22,0.5)' }} 
-                      />
-                    </LineChart>
-                 </ResponsiveContainer>
+              <button
+                onClick={() => setSelectedZone(null)}
+                className="w-12 h-12 rounded-2xl bg-[#1a1a1a] border border-[#333] hover:border-orange-500/50 flex items-center justify-center text-slate-400 hover:text-white transition-all shadow-lg"
+              >
+                <X size={24} />
+              </button>
+            </div>
+            <div className="p-8 h-[450px] w-full bg-gradient-to-b from-[#0a0a0a] to-[#050505]">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={getSimulatedHourlyData(selectedZone.value)}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#1a1a1a" vertical={false} />
+                  <XAxis dataKey="time" stroke="#444" tick={{ fill: '#666', fontSize: 11, fontWeight: 'bold' }} tickMargin={12} minTickGap={25} />
+                  <YAxis stroke="#444" tick={{ fill: '#666', fontSize: 11, fontWeight: 'bold' }} />
+                  <ChartTooltip
+                    contentStyle={{ backgroundColor: '#0a0a0a', border: '1px solid #333', borderRadius: '16px', boxShadow: '0 10px 30px rgba(0,0,0,0.5)' }}
+                    itemStyle={{ color: '#f97316', fontWeight: '900', fontSize: '14px' }}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="demand"
+                    stroke="#f97316"
+                    strokeWidth={5}
+                    dot={false}
+                    activeDot={{ r: 10, fill: '#f97316', stroke: '#fff', strokeWidth: 3, shadow: '0 0 20px rgba(249,115,22,0.5)' }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="px-8 py-4 bg-[#0d0d0d] border-t border-[#1a1a1a] flex items-center justify-between">
+              <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest">Synthetic SARIMAX Projection enabled</p>
+              <div className="flex gap-2">
+                <span className="w-2 h-2 rounded-full bg-orange-500" />
+                <span className="w-2 h-2 rounded-full bg-orange-500/40" />
+                <span className="w-2 h-2 rounded-full bg-orange-500/10" />
               </div>
-              <div className="px-8 py-4 bg-[#0d0d0d] border-t border-[#1a1a1a] flex items-center justify-between">
-                 <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest">Synthetic SARIMAX Projection enabled</p>
-                 <div className="flex gap-2">
-                    <span className="w-2 h-2 rounded-full bg-orange-500" />
-                    <span className="w-2 h-2 rounded-full bg-orange-500/40" />
-                    <span className="w-2 h-2 rounded-full bg-orange-500/10" />
-                 </div>
-              </div>
-           </div>
+            </div>
+          </div>
         </div>
       )}
     </div>

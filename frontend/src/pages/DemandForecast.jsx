@@ -43,11 +43,10 @@ export default function DemandForecast() {
   );
 
   const MetricCard = ({ eyebrow, title, value, subtitle, accent = false, children }) => (
-    <div className={`rounded-3xl border p-5 md:p-6 shadow-2xl backdrop-blur-3xl bg-[length:200%_200%] bg-gradient-to-br ${
-      accent
+    <div className={`rounded-3xl border p-5 md:p-6 shadow-2xl backdrop-blur-3xl bg-[length:200%_200%] bg-gradient-to-br ${accent
         ? 'border-orange-500/20 from-orange-950/20 via-[#1a1a1a]/90 to-[#0a0a0a]/90'
         : 'border-white/[0.08] from-[#1a1a1a]/90 via-[#111]/80 to-[#050505]/90'
-    }`}>
+      }`}>
       <p className={`text-[11px] font-bold uppercase tracking-[0.22em] ${accent ? 'text-orange-200/80' : 'text-slate-500'}`}>{eyebrow}</p>
       {title && <p className={`mt-3 text-sm font-semibold ${accent ? 'text-white/90' : 'text-slate-300'}`}>{title}</p>}
       {value !== undefined && value !== null && (
@@ -171,7 +170,7 @@ export default function DemandForecast() {
     if (horizon !== 'hourly' || !selectedForecastDate) return [];
     return availableWindow.times || [];
   }, [availableWindow.times, horizon, selectedForecastDate]);
-  
+
   useEffect(() => {
     if (selectedForecastDate && availableWindow.start_timestamp) {
       const selected = new Date(selectedForecastDate);
@@ -355,14 +354,14 @@ export default function DemandForecast() {
     // Helper to create smooth bezier path
     const createSmoothPath = (points) => {
       if (points.length < 2) return '';
-      
+
       let path = `M ${points[0][0]},${points[0][1]}`;
-      
+
       for (let i = 1; i < points.length; i++) {
         const prev = points[i - 1];
         const curr = points[i];
         const next = points[i + 1];
-        
+
         if (i === 1) {
           // First segment - simple line
           path += ` L ${curr[0]},${curr[1]}`;
@@ -378,7 +377,7 @@ export default function DemandForecast() {
           path += ` C ${cp1x},${cp1y} ${cp2x},${cp2y} ${curr[0]},${curr[1]}`;
         }
       }
-      
+
       return path;
     };
 
@@ -457,19 +456,19 @@ export default function DemandForecast() {
     <div className="max-w-7xl mx-auto pb-12">
       <section className="rounded-3xl border border-white/[0.08] backdrop-blur-2xl bg-gradient-to-b from-[#1a1a1a]/80 to-[#0a0a0a]/80 p-6 md:p-10 shadow-2xl relative overflow-hidden">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-orange-500/10 rounded-full blur-[120px] pointer-events-none" />
-        
+
         <div className="flex flex-col items-center w-full max-w-4xl mx-auto space-y-10 relative z-10">
-          
+
           <div className="flex flex-col items-center text-center">
             <div className="inline-flex items-center gap-2 rounded-full border border-orange-500/30 bg-orange-500/[0.08] px-4 py-2 shadow-[0_0_20px_rgba(249,115,22,0.15)]">
               <div className="h-2 w-2 rounded-full bg-orange-400 animate-pulse" />
               <p className="text-[11px] font-black uppercase tracking-[0.3em] text-orange-300">Forecast Workspace</p>
             </div>
-            
+
             <h1 className="mt-6 text-4xl md:text-[4rem] font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-br from-white via-slate-100 to-orange-500 drop-shadow-sm leading-[1.1]">
               Demand Forecast
             </h1>
-            
+
             <p className="mt-5 text-[15px] md:text-base text-slate-400 leading-relaxed max-w-lg">
               Explore near-term taxi demand by zone and inspect a specific prediction window that the model can actually serve.
             </p>
@@ -477,7 +476,7 @@ export default function DemandForecast() {
 
           <div className="w-full rounded-3xl border border-white/[0.08] bg-[#000000]/60 backdrop-blur-2xl p-6 md:p-8 shadow-2xl text-left">
             <div className="flex flex-col gap-6">
-              
+
               {/* Zone Selection */}
               <div ref={zoneDropdownRef}>
                 <label className="flex items-center gap-2 text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2.5">
@@ -493,7 +492,7 @@ export default function DemandForecast() {
                     </span>
                     <ChevronDown size={18} className={`text-slate-500 flex-shrink-0 transition-transform ${zoneDropdownOpen ? 'rotate-180' : ''}`} />
                   </button>
-                  
+
                   {zoneDropdownOpen && (
                     <div className="absolute z-50 mt-2 w-full bg-[#080808] border border-[#222] rounded-xl shadow-2xl overflow-hidden">
                       <div className="max-h-64 overflow-y-auto p-2">
@@ -508,11 +507,10 @@ export default function DemandForecast() {
                                   setSelectedZone(z.location_id.toString());
                                   setZoneDropdownOpen(false);
                                 }}
-                                className={`py-3 px-4 text-sm text-left rounded-lg transition-all ${
-                                  selectedZone === z.location_id.toString()
+                                className={`py-3 px-4 text-sm text-left rounded-lg transition-all ${selectedZone === z.location_id.toString()
                                     ? 'bg-orange-500 text-white font-bold'
                                     : 'text-slate-300 hover:bg-[#1a1a1a] hover:text-white'
-                                }`}
+                                  }`}
                               >
                                 {z.zone_name}
                               </button>
@@ -553,14 +551,14 @@ export default function DemandForecast() {
                         className="w-full px-5 py-3.5 border border-white/[0.08] rounded-xl text-white focus:outline-none focus:ring-1 focus:ring-orange-500 hover:bg-white/[0.06] bg-white/[0.03] transition-colors font-medium shadow-sm disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-between"
                       >
                         <span className="truncate">
-                          {selectedForecastTime 
+                          {selectedForecastTime
                             ? timeOptions.find(t => t.value === selectedForecastTime)?.label || selectedForecastTime
                             : (windowLoading ? 'Loading slot...' : (selectedForecastDate ? 'Select slot' : 'Select date'))
                           }
                         </span>
                         <ChevronDown size={18} className={`text-slate-500 flex-shrink-0 transition-transform ${timeDropdownOpen ? 'rotate-180' : ''}`} />
                       </button>
-                      
+
                       {timeDropdownOpen && (
                         <div className="absolute z-50 mt-2 w-full bg-[#080808] border border-[#222] rounded-xl shadow-2xl overflow-hidden">
                           <div className="max-h-64 overflow-y-auto p-2">
@@ -572,11 +570,10 @@ export default function DemandForecast() {
                                     setSelectedForecastTime(slot.value);
                                     setTimeDropdownOpen(false);
                                   }}
-                                  className={`py-2 px-2 text-sm rounded-lg transition-all ${
-                                    selectedForecastTime === slot.value
+                                  className={`py-2 px-2 text-sm rounded-lg transition-all ${selectedForecastTime === slot.value
                                       ? 'bg-orange-500 text-white font-bold'
                                       : 'text-slate-300 hover:bg-[#1a1a1a] hover:text-white'
-                                  }`}
+                                    }`}
                                 >
                                   {slot.value}
                                 </button>
@@ -649,7 +646,7 @@ export default function DemandForecast() {
           <div className="rounded-3xl border border-orange-500/20 backdrop-blur-3xl bg-gradient-to-br from-[#120a00]/90 to-[#0a0a0a]/90 p-8 md:p-12 shadow-2xl relative overflow-hidden flex flex-col items-center justify-center min-h-[320px]">
             {/* Spinning/pulsing background effects */}
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-orange-500/10 rounded-full blur-[100px] pointer-events-none animate-pulse" style={{ animationDuration: '4s' }} />
-            
+
             <div className="relative z-10 flex flex-col items-center">
               {/* Complex Spinner */}
               <div className="relative flex items-center justify-center w-28 h-28 mb-8">
@@ -679,7 +676,7 @@ export default function DemandForecast() {
                     <span className="w-1.5 h-1.5 rounded-full bg-slate-500 animate-bounce" style={{ animationDelay: '300ms' }} />
                   </span>
                 </div>
-                
+
                 <div className="mt-6 flex items-center justify-center gap-2">
                   <div className="inline-flex items-center justify-center gap-3 px-5 py-2.5 rounded-2xl bg-black/50 border border-white/5 backdrop-blur-md">
                     <span className="w-2 h-2 rounded-full bg-orange-500 animate-pulse" />
@@ -687,7 +684,7 @@ export default function DemandForecast() {
                   </div>
                 </div>
               </div>
-              
+
               {/* Interaction prompt */}
               <p className="mt-8 text-[11px] text-slate-500 uppercase tracking-widest font-bold max-w-sm text-center leading-relaxed">
                 Running SARIMAX algorithms against historical anomalies & real-time constraints
@@ -799,18 +796,18 @@ export default function DemandForecast() {
                     <span>Best time to reposition fleet</span>
                   </div>
                 </MetricCard>
-                
+
                 <MetricCard
                   eyebrow="Financial Projection"
                   title="Est. Hourly Revenue"
                   value={`$${(
-                    (forecastData?.predicted?.find(p => p.timestamp === (requestedWindow?.timestamp || selectedPrediction?.timestamp))?.projected_revenue) || 
+                    (forecastData?.predicted?.find(p => p.timestamp === (requestedWindow?.timestamp || selectedPrediction?.timestamp))?.projected_revenue) ||
                     ((requestedWindow?.predicted ?? selectedPrediction?.predicted ?? 0) * 15)
                   ).toLocaleString()}`}
                   subtitle={
-                    (forecastData?.predicted?.find(p => p.timestamp === (requestedWindow?.timestamp || selectedPrediction?.timestamp))?.surge_multiplier > 1.0) 
-                    ? "Surge pricing active for this block." 
-                    : "Standard baserate volume."
+                    (forecastData?.predicted?.find(p => p.timestamp === (requestedWindow?.timestamp || selectedPrediction?.timestamp))?.surge_multiplier > 1.0)
+                      ? "Surge pricing active for this block."
+                      : "Standard baserate volume."
                   }
                   accent
                 >
@@ -884,10 +881,10 @@ export default function DemandForecast() {
                           <stop offset="100%" stopColor="#f97316" stopOpacity="0" />
                         </linearGradient>
                         <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
-                          <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+                          <feGaussianBlur stdDeviation="3" result="coloredBlur" />
                           <feMerge>
-                            <feMergeNode in="coloredBlur"/>
-                            <feMergeNode in="SourceGraphic"/>
+                            <feMergeNode in="coloredBlur" />
+                            <feMergeNode in="SourceGraphic" />
                           </feMerge>
                         </filter>
                       </defs>
@@ -895,12 +892,12 @@ export default function DemandForecast() {
                       {/* Grid lines */}
                       {svgChart.yTicks.map((tick) => (
                         <g key={`y-${tick.value}`}>
-                          <line 
-                            x1={svgChart.padding.left} 
-                            x2={svgChart.width - svgChart.padding.right} 
-                            y1={tick.y} 
-                            y2={tick.y} 
-                            stroke="#1a1a1a" 
+                          <line
+                            x1={svgChart.padding.left}
+                            x2={svgChart.width - svgChart.padding.right}
+                            y1={tick.y}
+                            y2={tick.y}
+                            stroke="#1a1a1a"
                             strokeWidth="1"
                           />
                           <text x={svgChart.padding.left - 10} y={tick.y + 4} fill="#475569" fontSize="11" textAnchor="end">{tick.value}</text>
@@ -937,12 +934,12 @@ export default function DemandForecast() {
 
                       {/* Historical line */}
                       {svgChart.actualPath && (
-                        <path 
+                        <path
                           d={svgChart.actualPath}
-                          fill="none" 
-                          stroke="#6b7280" 
-                          strokeWidth="2.5" 
-                          strokeLinecap="round" 
+                          fill="none"
+                          stroke="#6b7280"
+                          strokeWidth="2.5"
+                          strokeLinecap="round"
                           strokeLinejoin="round"
                           opacity="0.8"
                         />
@@ -950,12 +947,12 @@ export default function DemandForecast() {
 
                       {/* Predicted line with glow */}
                       {svgChart.predictedPath && (
-                        <path 
+                        <path
                           d={svgChart.predictedPath}
-                          fill="none" 
-                          stroke="#f97316" 
-                          strokeWidth="3" 
-                          strokeLinecap="round" 
+                          fill="none"
+                          stroke="#f97316"
+                          strokeWidth="3"
+                          strokeLinecap="round"
                           strokeLinejoin="round"
                           filter="url(#glow)"
                         />
@@ -967,9 +964,9 @@ export default function DemandForecast() {
                         const y = svgChart.yFor(point.predicted !== undefined ? point.predicted : point.actual);
                         const isHovered = hoveredPoint === index;
                         const hasValue = typeof point.predicted === 'number' || typeof point.actual === 'number';
-                        
+
                         if (!hasValue) return null;
-                        
+
                         return (
                           <g key={`point-${index}`}>
                             {/* Invisible hit area for easier hovering */}
@@ -1001,7 +998,7 @@ export default function DemandForecast() {
                         const x = svgChart.xFor(hoveredPoint);
                         const y = svgChart.yFor(point.predicted !== undefined ? point.predicted : point.actual);
                         const value = point.predicted !== undefined ? point.predicted : point.actual;
-                        
+
                         return (
                           <g>
                             {/* Tooltip background */}
@@ -1064,30 +1061,30 @@ export default function DemandForecast() {
                         return (
                           <g>
                             {/* Vertical guide line */}
-                            <line 
-                              x1={selectedX} 
-                              x2={selectedX} 
-                              y1={svgChart.padding.top} 
-                              y2={svgChart.padding.top + svgChart.innerHeight} 
-                              stroke="#fb923c" 
-                              strokeDasharray="4 4" 
+                            <line
+                              x1={selectedX}
+                              x2={selectedX}
+                              y1={svgChart.padding.top}
+                              y2={svgChart.padding.top + svgChart.innerHeight}
+                              stroke="#fb923c"
+                              strokeDasharray="4 4"
                               opacity="0.3"
                             />
                             {/* Highlight circle */}
-                            <circle 
-                              cx={selectedX} 
-                              cy={selectedY} 
-                              r="8" 
-                              fill="#f97316" 
-                              stroke="#fff" 
+                            <circle
+                              cx={selectedX}
+                              cy={selectedY}
+                              r="8"
+                              fill="#f97316"
+                              stroke="#fff"
                               strokeWidth="3"
                               filter="url(#glow)"
                             />
                             {/* Inner dot */}
-                            <circle 
-                              cx={selectedX} 
-                              cy={selectedY} 
-                              r="4" 
+                            <circle
+                              cx={selectedX}
+                              cy={selectedY}
+                              r="4"
                               fill="#fff"
                             />
                           </g>
@@ -1145,7 +1142,7 @@ export default function DemandForecast() {
                   </div>
                 </div>
               </MetricCard>
-              
+
               {/* Backtesting & Trust Building Card */}
               <div className="rounded-3xl border border-white/[0.08] backdrop-blur-3xl bg-gradient-to-br from-[#1a1a1a]/90 via-[#111]/80 to-[#050505]/90 p-5 md:p-6 shadow-2xl">
                 <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-orange-200/80 mb-3">Model Verification</p>
@@ -1153,7 +1150,7 @@ export default function DemandForecast() {
                 <p className="text-sm text-slate-400 leading-relaxed mb-5">
                   This forecast engine was rigorously backtested on 4 years of historical NYC taxi records to ensure high operational reliability.
                 </p>
-                
+
                 <div className="space-y-4">
                   <div className="flex flex-col gap-1 p-3 rounded-2xl border border-green-500/20 bg-green-500/10">
                     <div className="flex items-center justify-between">
@@ -1162,7 +1159,7 @@ export default function DemandForecast() {
                     </div>
                     <p className="text-[11px] text-green-200/80">Average deviation between prediction and reality.</p>
                   </div>
-                  
+
                   <div className="flex flex-col gap-1 p-3 rounded-2xl border border-white/5 bg-black/40 backdrop-blur-md hover:bg-black/80 transition-colors">
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-bold uppercase tracking-wider text-slate-400">R² Score</span>
