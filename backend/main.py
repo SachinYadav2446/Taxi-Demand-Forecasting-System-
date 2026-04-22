@@ -22,8 +22,13 @@ def root():
 def health_check(db: Session = Depends(get_db)):
     try:
         from sqlalchemy import text
+        # Try a simple query
         db.execute(text("SELECT 1"))
-        return {"status": "healthy", "database": "connected"}
+        
+        # Try to ensure tables exist (in case startup failed)
+        Base.metadata.create_all(bind=engine)
+        
+        return {"status": "healthy", "database": "connected", "tables": "verified"}
     except Exception as e:
         return {"status": "unhealthy", "database": str(e)}
 

@@ -14,53 +14,65 @@ router = APIRouter(
 
 @router.post("/register/operator", response_model=schemas.Token)
 def register_operator(operator: schemas.OperatorCreate, db: Session = Depends(get_db)):
-    if db.query(models.Company).filter(models.Company.email == operator.email).first():
-        raise HTTPException(status_code=400, detail="Email already registered")
-    
-    if db.query(models.Company).filter(models.Company.name == operator.name).first():
-        raise HTTPException(status_code=400, detail="Company name already taken")
-    
-    hashed_password = get_password_hash(operator.password)
-    db_operator = models.Company(
-        name=operator.name,
-        email=operator.email,
-        password_hash=hashed_password,
-        fleet_size=operator.fleet_size
-    )
-    db.add(db_operator)
-    db.commit()
-    db.refresh(db_operator)
+    try:
+        if db.query(models.Company).filter(models.Company.email == operator.email).first():
+            raise HTTPException(status_code=400, detail="Email already registered")
+        
+        if db.query(models.Company).filter(models.Company.name == operator.name).first():
+            raise HTTPException(status_code=400, detail="Company name already taken")
+        
+        hashed_password = get_password_hash(operator.password)
+        db_operator = models.Company(
+            name=operator.name,
+            email=operator.email,
+            password_hash=hashed_password,
+            fleet_size=operator.fleet_size
+        )
+        db.add(db_operator)
+        db.commit()
+        db.refresh(db_operator)
 
-    # Automatically log them in by issuing a token
-    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    access_token = create_access_token(
-        data={"sub": db_operator.email, "role": "operator", "user_id": db_operator.id},
-        expires_delta=access_token_expires
-    )
-    return {"access_token": access_token, "token_type": "bearer"}
+        # Automatically log them in by issuing a token
+        access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+        access_token = create_access_token(
+            data={"sub": db_operator.email, "role": "operator", "user_id": db_operator.id},
+            expires_delta=access_token_expires
+        )
+        return {"access_token": access_token, "token_type": "bearer"}
+    except Exception as e:
+        if isinstance(e, HTTPException):
+            raise e
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Database error during registration: {str(e)}")
 
 @router.post("/register/driver", response_model=schemas.Token)
 def register_driver(driver: schemas.DriverCreate, db: Session = Depends(get_db)):
-    db_user = db.query(models.Driver).filter(models.Driver.email == driver.email).first()
-    if db_user:
-        raise HTTPException(status_code=400, detail="Email already registered")
-    
-    hashed_password = get_password_hash(driver.password)
-    db_driver = models.Driver(
-        name=driver.name,
-        email=driver.email,
-        password_hash=hashed_password
-    )
-    db.add(db_driver)
-    db.commit()
-    db.refresh(db_driver)
+    try:
+        db_user = db.query(models.Driver).filter(models.Driver.email == driver.email).first()
+        if db_user:
+            raise HTTPException(status_code=400, detail="Email already registered")
+        
+        hashed_password = get_password_hash(driver.password)
+        db_driver = models.Driver(
+            name=driver.name,
+            email=driver.email,
+            password_hash=hashed_password
+        )
+        db.add(db_driver)
+        db.commit()
+        db.refresh(db_driver)
 
-    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    access_token = create_access_token(
-        data={"sub": db_driver.email, "role": "driver", "user_id": db_driver.id},
-        expires_delta=access_token_expires
-    )
-    return {"access_token": access_token, "token_type": "bearer"}
+        access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+        access_token = create_access_token(
+            data={"sub": db_driver.email, "role": "driver", "user_id": db_driver.id},
+            expires_delta=access_token_expires
+        )
+        return {"access_token": access_token, "token_type": "bearer"}
+    except Exception as e:
+        if isinstance(e, HTTPException):
+            raise e
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Database error during registration: {str(e)}")
 
 import logging
 import time
