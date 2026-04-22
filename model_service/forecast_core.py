@@ -104,8 +104,9 @@ def generate_synthetic_data(location_id: int):
     return df
 
 
-def prepare_time_series(df: pd.DataFrame) -> pd.Series:
+def prepare_time_series(df):
     """Prepare time series data for forecasting."""
+    import pandas as pd
     df['datetime'] = pd.to_datetime(df['datetime'])
     df = df.sort_values('datetime')
     df = df.set_index('datetime')
