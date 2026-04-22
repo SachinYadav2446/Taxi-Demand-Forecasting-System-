@@ -14,4 +14,4 @@ node_modules/
 .serverless/
 Dockerfile
 Dockerfile.lambda
-global-bundle.pem
+# global-bundle.pem included for RDS SSL support

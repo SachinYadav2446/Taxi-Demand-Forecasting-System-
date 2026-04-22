@@ -9,6 +9,10 @@ load_dotenv()
 # We get the database URL from environment variable, fallback to default for local non-docker dev
 SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://myuser:mypassword@localhost:5432/taxidemand")
 
+# Fix for SQLAlchemy 1.4+ where postgres:// is not supported, must be postgresql://
+if SQLALCHEMY_DATABASE_URL and SQLALCHEMY_DATABASE_URL.startswith("postgres://"):
+    SQLALCHEMY_DATABASE_URL = SQLALCHEMY_DATABASE_URL.replace("postgres://", "postgresql://", 1)
+
 # SSL Configuration for RDS
 connect_args = {}
 if "sslrootcert" in SQLALCHEMY_DATABASE_URL:
