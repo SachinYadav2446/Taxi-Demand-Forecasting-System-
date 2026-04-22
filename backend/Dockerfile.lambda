@@ -1,13 +1,17 @@
 FROM public.ecr.aws/lambda/python:3.12
 
 # Copy only requirements first
-COPY requirements.txt .
+COPY backend/requirements.txt .
 
-# Install dependencies (no build tools needed for pinned versions)
+# Install dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy the rest of the function code
-COPY . ${LAMBDA_TASK_ROOT}
+# Copy backend and model_service
+COPY backend/ ${LAMBDA_TASK_ROOT}/backend/
+COPY model_service/ ${LAMBDA_TASK_ROOT}/model_service/
+
+# Set working directory to backend so FastAPI can find modules
+WORKDIR ${LAMBDA_TASK_ROOT}/backend
 
 # Set the CMD to your handler
 CMD [ "main.handler" ]

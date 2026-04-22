@@ -10,8 +10,8 @@ provider:
   ecr:
     images:
       appimage:
-        path: ./
-        file: Dockerfile.lambda
+        path: ../
+        file: backend/Dockerfile.lambda
 
 functions:
   api:
