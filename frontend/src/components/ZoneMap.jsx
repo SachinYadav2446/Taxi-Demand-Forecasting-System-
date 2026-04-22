@@ -26,29 +26,61 @@ function getColor(pickups, maxPickups) {
 
 // --- Area Map (Treemap) Components ---
 const CustomizedContent = (props) => {
-  const { depth, x, y, width, height, index, name, onZoneClick } = props;
-  if (depth === 1) {
-    const heatIndex = Math.min(index, HEATMAP_COLORS.length - 1);
-    const heatColor = HEATMAP_COLORS[heatIndex];
+  const { depth, x, y, width, height, index, name, value, onZoneClick, maxPickups } = props;
+  
+  if (depth === 2) {
+    const ratio = value / (maxPickups || 1);
+    let heatColor = '#fbbf24'; // Yellow
+    if (ratio > 0.7) heatColor = '#ef4444'; // Red
+    else if (ratio > 0.4) heatColor = '#f97316'; // Orange
+    else if (ratio > 0.15) heatColor = '#f59e0b'; // Amber
+
     return (
-      <g onClick={() => onZoneClick && onZoneClick({ name, value: props.value, index })}>
+      <g onClick={() => onZoneClick && onZoneClick({ name, value, index })}>
         <rect
           x={x} y={y} width={width} height={height}
           style={{
             fill: heatColor,
             stroke: '#111111',
-            strokeWidth: 3,
+            strokeWidth: 2,
             transition: 'all 0.3s ease',
           }}
           className="cursor-crosshair hover:brightness-125"
         />
-        {width > 50 && height > 30 ? (
+        {width > 40 && height > 30 ? (
           <text
-            x={x + width / 2} y={y + height / 2 + 5}
+            x={x + width / 2} y={y + height / 2 + 4}
             textAnchor="middle" fill="#ffffff"
-            fontSize={height > 100 ? 26 : 14}
+            fontSize={height > 80 ? 14 : 10}
             fontWeight="700"
             style={{ fontFamily: 'Sora, sans-serif', pointerEvents: 'none' }}
+          >
+            {name}
+          </text>
+        ) : null}
+      </g>
+    );
+  }
+  
+  if (depth === 1) {
+    return (
+      <g>
+        <rect
+          x={x} y={y} width={width} height={height}
+          style={{
+            fill: 'transparent',
+            stroke: '#222222',
+            strokeWidth: 4,
+          }}
+          pointerEvents="none"
+        />
+        {width > 50 && height > 30 ? (
+          <text
+            x={x + 6} y={y + 16}
+            textAnchor="start" fill="#aaaaaa"
+            fontSize={12}
+            fontWeight="800"
+            style={{ fontFamily: 'Sora, sans-serif', pointerEvents: 'none', textTransform: 'uppercase', letterSpacing: '0.05em' }}
           >
             {name}
           </text>
