@@ -1,0 +1,10 @@
+FROM public.ecr.aws/lambda/python:3.10
+
+# Copy function code
+COPY . ${LAMBDA_TASK_ROOT}
+
+# Install dependencies
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Set the CMD to your handler (filename.method)
+CMD [ "main.handler" ]

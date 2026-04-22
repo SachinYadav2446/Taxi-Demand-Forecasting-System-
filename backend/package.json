@@ -1,0 +1,12 @@
+{
+  "name": "taxi-demand-backend",
+  "version": "1.0.0",
+  "description": "Taxi Demand Forecasting Backend for AWS Lambda",
+  "scripts": {
+    "deploy": "sls deploy"
+  },
+  "devDependencies": {
+    "serverless": "^3.0.0",
+    "serverless-offline": "^12.0.0"
+  }
+}

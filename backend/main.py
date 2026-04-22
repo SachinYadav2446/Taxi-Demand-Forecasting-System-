@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from database import engine, Base
 import models
+from mangum import Mangum
 
 app = FastAPI(title="Taxi Demand Forecasting System API")
 
@@ -31,6 +32,9 @@ app.include_router(zones.router)
 app.include_router(forecasts.router)
 app.include_router(contact.router)
 app.include_router(intelligence.router)
+
+# AWS Lambda Handler
+handler = Mangum(app)
 
 if __name__ == "__main__":
     import uvicorn

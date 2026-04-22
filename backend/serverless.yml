@@ -1,0 +1,25 @@
+service: taxi-demand-backend
+
+provider:
+  name: aws
+  region: us-east-1 # Change to your preferred region
+  stage: prod
+  ecr:
+    images:
+      appimage:
+        path: ./
+        file: Dockerfile.lambda
+
+functions:
+  api:
+    image:
+      name: appimage
+    events:
+      - httpApi: '*'
+    environment:
+      DATABASE_URL: ${env:DATABASE_URL}
+      SMTP_EMAIL: ${env:SMTP_EMAIL}
+      SMTP_APP_PASSWORD: ${env:SMTP_APP_PASSWORD}
+
+plugins:
+  - serverless-offline # For local testing if needed
