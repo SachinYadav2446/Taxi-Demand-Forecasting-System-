@@ -43,7 +43,7 @@ def register_operator(operator: schemas.OperatorCreate, db: Session = Depends(ge
         if isinstance(e, HTTPException):
             raise e
         db.rollback()
-        raise HTTPException(status_code=500, detail=f"DB ERR [v2] (Operator): {str(e)}")
+        raise HTTPException(status_code=418, detail=f"DB ERR [v3] (Operator): {str(e)}")
 
 @router.post("/register/driver", response_model=schemas.Token)
 def register_driver(driver: schemas.DriverCreate, db: Session = Depends(get_db)):
@@ -72,7 +72,7 @@ def register_driver(driver: schemas.DriverCreate, db: Session = Depends(get_db))
         if isinstance(e, HTTPException):
             raise e
         db.rollback()
-        raise HTTPException(status_code=500, detail=f"DB ERR [v2] (Driver): {str(e)}")
+        raise HTTPException(status_code=418, detail=f"DB ERR [v3] (Driver): {str(e)}")
 
 import logging
 import time
