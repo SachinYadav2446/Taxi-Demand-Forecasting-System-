@@ -18,11 +18,19 @@ ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "1440
 pwd_context = CryptContext(schemes=["bcrypt"], bcrypt__rounds=12, deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
 
+import hashlib
+
 def verify_password(plain_password, hashed_password):
-    return pwd_context.verify(plain_password, hashed_password)
+    # Pre-hash with SHA-256 to overcome bcrypt's 72-character limit
+    password_bytes = plain_password.encode('utf-8')
+    sha256_hash = hashlib.sha256(password_bytes).hexdigest()
+    return pwd_context.verify(sha256_hash, hashed_password)
 
 def get_password_hash(password):
-    return pwd_context.hash(password)
+    # Pre-hash with SHA-256 to overcome bcrypt's 72-character limit
+    password_bytes = password.encode('utf-8')
+    sha256_hash = hashlib.sha256(password_bytes).hexdigest()
+    return pwd_context.hash(sha256_hash)
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     to_encode = data.copy()
