@@ -1,4 +1,5 @@
 service: taxi-demand-backend
+useDotenv: true
 
 provider:
   name: aws
@@ -17,9 +18,6 @@ functions:
     events:
       - httpApi: '*'
     environment:
-      DATABASE_URL: ${env:DATABASE_URL}
-      SMTP_EMAIL: ${env:SMTP_EMAIL}
-      SMTP_APP_PASSWORD: ${env:SMTP_APP_PASSWORD}
-
-plugins:
-  - serverless-offline # For local testing if needed
+      DATABASE_URL: "postgresql://postgres:Sachin2442006@database-1.cdoqem628xxj.eu-north-1.rds.amazonaws.com:5432/postgres"
+      SMTP_EMAIL: "demandsightsupport@gmail.com"
+      SMTP_APP_PASSWORD: "xtjjmdkingebuvqw"
