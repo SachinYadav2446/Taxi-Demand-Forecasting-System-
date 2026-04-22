@@ -1,0 +1,17 @@
+.git
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.env
+.venv
+env/
+venv/
+taxi_system.db
+datasets/
+scripts/
+node_modules/
+.serverless/
+Dockerfile
+Dockerfile.lambda
+global-bundle.pem

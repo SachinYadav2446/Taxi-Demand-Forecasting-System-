@@ -1,13 +1,17 @@
 FROM public.ecr.aws/lambda/python:3.11
 
-# Install build tools for scientific packages
+# Install build tools
 RUN yum install -y gcc-c++ pkgconfig python3-devel
 
-# Copy function code
+# Copy only requirements first to leverage Docker cache
+COPY requirements.txt .
+
+# Install dependencies
+RUN pip install --no-cache-dir wheel Cython setuptools
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy the rest of the function code
 COPY . ${LAMBDA_TASK_ROOT}
 
-# Install dependencies with verbose output to identify failures
-RUN pip install --no-cache-dir -r requirements.txt -v
-
-# Set the CMD to your handler (filename.method)
+# Set the CMD to your handler
 CMD [ "main.handler" ]
