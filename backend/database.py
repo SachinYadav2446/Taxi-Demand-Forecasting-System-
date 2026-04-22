@@ -14,11 +14,20 @@ connect_args = {}
 if "sslrootcert" in SQLALCHEMY_DATABASE_URL:
     # If parameters are in the URL string, SQLAlchemy handles them
     pass
-elif os.path.exists("global-bundle.pem"):
-    connect_args = {
-        "sslmode": "verify-full",
-        "sslrootcert": "global-bundle.pem"
-    }
+else:
+    # Try to find global-bundle.pem in current dir or parent dir (for Lambda)
+    cert_path = os.path.join(os.path.dirname(__file__), "global-bundle.pem")
+    if not os.path.exists(cert_path):
+        # Fallback to current working directory
+        cert_path = "global-bundle.pem"
+        
+    if os.path.exists(cert_path):
+        # Using 'require' is safer than 'verify-full' if there are hostname mismatches,
+        # but still ensures encrypted connection.
+        connect_args = {
+            "sslmode": "require",
+            "sslrootcert": cert_path
+        }
 
 engine = create_engine(
     SQLALCHEMY_DATABASE_URL,

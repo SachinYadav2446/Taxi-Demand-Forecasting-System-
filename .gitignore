@@ -4,6 +4,7 @@ __pycache__/
 *.pyc
 .env
 
+node_modules/
 # --- Data Files (DO NOT UPLOAD THESE) ---
 # We ignore the raw data because it is too large for GitHub
 datasets/
@@ -30,4 +31,4 @@ model_cache/
 
 # --- Development Scratch Files ---
 *scratch_*
-backend/scripts/test_*
+backend/scripts/test_*

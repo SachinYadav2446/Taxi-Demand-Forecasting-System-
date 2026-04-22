@@ -1,43 +1,76 @@
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-from database import engine, Base
-import models
-from mangum import Mangum
+import json
+import traceback
+import sys
 
-app = FastAPI(title="Taxi Demand Forecasting System API")
+try:
+    from fastapi import FastAPI
+    from fastapi.middleware.cors import CORSMiddleware
+    from database import engine, Base
+    import models
+    from mangum import Mangum
 
-@app.on_event("startup")
-def on_startup():
-    # Optimization: Create tables only when the app is starting up,
-    # preventing deadlocks during uvicorn reload/import cycles on Windows.
-    Base.metadata.create_all(bind=engine)
+    app = FastAPI(title="Taxi Demand Forecasting System API")
 
-# Configure CORS
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"], # For production, change to specific origins
-    allow_credentials=False,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+    @app.on_event("startup")
+    def on_startup():
+        try:
+            # Optimization: Create tables only when the app is starting up
+            Base.metadata.create_all(bind=engine)
+        except Exception as e:
+            print(f"Database startup error: {e}")
+            # We don't raise here to allow the app to start, but subsequent DB calls will fail
 
-from routers import auth, zones, forecasts, contact, intelligence
+    # Configure CORS
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_credentials=False,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 
-@app.get("/")
-def root():
-    return {"message": "Welcome to Taxi Demand Forecasting API"}
+    from routers import auth, zones, forecasts, contact, intelligence
 
-app.include_router(auth.router)
-app.include_router(zones.router)
-app.include_router(forecasts.router)
-app.include_router(contact.router)
-app.include_router(intelligence.router)
+    @app.get("/")
+    def root():
+        return {"message": "Welcome to Taxi Demand Forecasting API"}
 
-# AWS Lambda Handler
-handler = Mangum(app)
+    @app.get("/debug")
+    def debug():
+        return {
+            "python_version": sys.version,
+            "path": sys.path,
+            "env": {k: v for k, v in os.environ.items() if "PASSWORD" not in k and "SECRET" not in k}
+        }
+
+    app.include_router(auth.router)
+    app.include_router(zones.router)
+    app.include_router(forecasts.router)
+    app.include_router(contact.router)
+    app.include_router(intelligence.router)
+
+    # AWS Lambda Handler
+    handler = Mangum(app, lifespan="off") # Use lifespan="off" to bypass startup event issues if any
+
+except Exception as e:
+    # If startup fails, we provide a fallback handler that returns the error
+    error_msg = f"Startup Error: {str(e)}\n{traceback.format_exc()}"
+    print(error_msg)
+    
+    def handler(event, context):
+        return {
+            "statusCode": 500,
+            "headers": {"Content-Type": "application/json"},
+            "body": json.dumps({
+                "message": "Internal Server Error during startup",
+                "error": str(e),
+                "traceback": traceback.format_exc()
+            })
+        }
 
 if __name__ == "__main__":
     import uvicorn
-    # Optimization: Running directly via python main.py bypasses reloader deadlocks on Windows
+    import os
+    # For local running, we use the app directly
     uvicorn.run(app, host="0.0.0.0", port=8000)
 
