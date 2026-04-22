@@ -10,13 +10,9 @@ from typing import Optional, Tuple, Dict, Any
 import pickle
 from pathlib import Path
 
-import pandas as pd
-import numpy as np
-from statsmodels.tsa.statespace.sarimax import SARIMAX
-from statsmodels.tsa.stattools import adfuller
-from sklearn.metrics import mean_absolute_error, mean_squared_error
-import warnings
-warnings.filterwarnings('ignore')
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -43,10 +39,11 @@ class TaxiDemandForecaster:
         self.exog_vars = ['profile_mean', 'real_precipitation']  # Switching from simulation to real data
         self.demand_profiles = {}
         
-    def _create_features(self, df: pd.DataFrame) -> pd.DataFrame:
+    def _create_features(self, df):
         """
         Create exogenous features for SARIMAX (from notebook).
         """
+        import numpy as np
         df = df.copy()
         
         # Time-based features
@@ -72,10 +69,11 @@ class TaxiDemandForecaster:
             
         return df
     
-    def _prepare_data(self, ts: pd.Series) -> Tuple[pd.Series, pd.DataFrame]:
+    def _prepare_data(self, ts):
         """
         Prepare target and exogenous variables.
         """
+        import pandas as pd
         df = pd.DataFrame({'pickup_count': ts})
         df = self._create_features(df)
         
@@ -87,10 +85,16 @@ class TaxiDemandForecaster:
         
         return y, X
     
-    def train(self, ts: pd.Series) -> Dict[str, float]:
+    def train(self, ts):
         """
         Train SARIMAX with exogenous variables (from notebook).
         """
+        import pandas as pd
+        import numpy as np
+        from statsmodels.tsa.statespace.sarimax import SARIMAX
+        from statsmodels.tsa.stattools import adfuller
+        from sklearn.metrics import mean_absolute_error, mean_squared_error
+        
         logger.info(f"Training SARIMAX-Pro for location {self.location_id}")
         
         if len(ts) < 200:
@@ -225,10 +229,13 @@ class TaxiDemandForecaster:
         self.is_trained = True
         return self.metrics
     
-    def predict(self, future_timestamps: pd.DatetimeIndex, ts: pd.Series) -> pd.DataFrame:
+    def predict(self, future_timestamps, ts):
         """
         Generate predictions using SARIMAX with exogenous variables.
         """
+        import pandas as pd
+        import numpy as np
+        
         if not self.is_trained or self.model is None:
             raise ValueError("Model not trained")
         
@@ -308,7 +315,7 @@ class TaxiDemandForecaster:
 
 def generate_advanced_forecast(
     location_id: int,
-    ts: pd.Series,
+    ts,
     horizon: str = "hourly",
     periods: int = 24,
     requested_date: Optional[str] = None,
@@ -317,6 +324,9 @@ def generate_advanced_forecast(
     """
     Generate forecast using advanced SARIMAX with exogenous variables.
     """
+    import pandas as pd
+    import numpy as np
+    
     # Initialize forecaster
     forecaster = TaxiDemandForecaster(location_id)
     

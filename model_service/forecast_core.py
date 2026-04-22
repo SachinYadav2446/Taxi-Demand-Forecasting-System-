@@ -9,13 +9,6 @@ from datetime import datetime, timedelta
 from typing import Optional
 from pathlib import Path
 
-import pandas as pd
-import numpy as np
-from statsmodels.tsa.statespace.sarimax import SARIMAX
-
-# Import advanced forecasting
-from .advanced_forecast import generate_advanced_forecast
-
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -33,8 +26,9 @@ PROCESSED_DATA_DIR = "/tmp/datasets_processed"
 
 from database import engine
 
-def load_zone_data(location_id: int) -> pd.DataFrame:
+def load_zone_data(location_id: int):
     """Load historical data for a specific zone directly from PostgreSQL database."""
+    import pandas as pd
     query = f"SELECT datetime, pickup_count FROM historical_demand WHERE location_id = {location_id} ORDER BY datetime"
     
     try:
@@ -57,8 +51,10 @@ def load_zone_data(location_id: int) -> pd.DataFrame:
     return generate_synthetic_data(location_id)
 
 
-def generate_synthetic_data(location_id: int) -> pd.DataFrame:
+def generate_synthetic_data(location_id: int):
     """Generate realistic synthetic historical data for demonstration."""
+    import pandas as pd
+    import numpy as np
     np.random.seed(location_id)
     
     # Generate 60 days of hourly data for better training
@@ -180,6 +176,7 @@ def generate_forecast(
     try:
         # Try advanced ensemble model first
         logger.info(f"Attempting advanced forecast for location {location_id}")
+        from .advanced_forecast import generate_advanced_forecast
         advanced_result = generate_advanced_forecast(location_id, ts, horizon, periods, requested_date, requested_time)
         
         if advanced_result is not None:
@@ -188,6 +185,8 @@ def generate_forecast(
         
         # Fallback to SARIMAX if advanced model fails
         logger.warning(f"Advanced model failed, falling back to SARIMAX")
+        
+        from statsmodels.tsa.statespace.sarimax import SARIMAX
         
         # Fit SARIMAX model
         model = SARIMAX(
