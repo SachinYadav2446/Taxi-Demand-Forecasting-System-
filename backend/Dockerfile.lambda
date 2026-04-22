@@ -6,12 +6,9 @@ COPY backend/requirements.txt .
 # Install dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy backend and model_service
-COPY backend/ ${LAMBDA_TASK_ROOT}/backend/
+# Copy backend contents and model_service
+COPY backend/ ${LAMBDA_TASK_ROOT}/
 COPY model_service/ ${LAMBDA_TASK_ROOT}/model_service/
 
-# Set working directory to backend so FastAPI can find modules
-WORKDIR ${LAMBDA_TASK_ROOT}/backend
-
-# Set the CMD to your handler
+# Set the CMD to your handler (main.py is now in the root)
 CMD [ "main.handler" ]
