@@ -13,6 +13,9 @@ from pathlib import Path
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+import pandas as pd
+import numpy as np
+
 MODEL_NAME = "SARIMAX-Pro"
 
 # Default paths
@@ -28,7 +31,6 @@ from database import engine
 
 def load_zone_data(location_id: int):
     """Load historical data for a specific zone directly from PostgreSQL database."""
-    import pandas as pd
     query = f"SELECT datetime, pickup_count FROM historical_demand WHERE location_id = {location_id} ORDER BY datetime"
     
     try:
@@ -53,8 +55,6 @@ def load_zone_data(location_id: int):
 
 def generate_synthetic_data(location_id: int):
     """Generate realistic synthetic historical data for demonstration."""
-    import pandas as pd
-    import numpy as np
     np.random.seed(location_id)
     
     # Generate 60 days of hourly data for better training
@@ -106,7 +106,6 @@ def generate_synthetic_data(location_id: int):
 
 def prepare_time_series(df):
     """Prepare time series data for forecasting."""
-    import pandas as pd
     df['datetime'] = pd.to_datetime(df['datetime'])
     df = df.sort_values('datetime')
     df = df.set_index('datetime')

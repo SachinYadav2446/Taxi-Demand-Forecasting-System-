@@ -18,6 +18,9 @@ logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+import pandas as pd
+import numpy as np
+
 MODEL_NAME = "SARIMAX-Pro"
 BASE_DIR = Path(__file__).parent
 CACHE_DIR = Path("/tmp/model_cache")
@@ -43,7 +46,6 @@ class TaxiDemandForecaster:
         """
         Create exogenous features for SARIMAX (from notebook).
         """
-        import numpy as np
         df = df.copy()
         
         # Time-based features
@@ -73,7 +75,6 @@ class TaxiDemandForecaster:
         """
         Prepare target and exogenous variables.
         """
-        import pandas as pd
         df = pd.DataFrame({'pickup_count': ts})
         df = self._create_features(df)
         
@@ -89,8 +90,6 @@ class TaxiDemandForecaster:
         """
         Train SARIMAX with exogenous variables (from notebook).
         """
-        import pandas as pd
-        import numpy as np
         from statsmodels.tsa.statespace.sarimax import SARIMAX
         from statsmodels.tsa.stattools import adfuller
         from sklearn.metrics import mean_absolute_error, mean_squared_error
@@ -233,8 +232,6 @@ class TaxiDemandForecaster:
         """
         Generate predictions using SARIMAX with exogenous variables.
         """
-        import pandas as pd
-        import numpy as np
         
         if not self.is_trained or self.model is None:
             raise ValueError("Model not trained")
@@ -324,8 +321,6 @@ def generate_advanced_forecast(
     """
     Generate forecast using advanced SARIMAX with exogenous variables.
     """
-    import pandas as pd
-    import numpy as np
     
     # Initialize forecaster
     forecaster = TaxiDemandForecaster(location_id)
