@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 export const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000',
+  baseURL: import.meta.env.VITE_API_URL || 'https://taxi-demand-forecasting-system-3u2p.onrender.com',
 });
 
 api.interceptors.request.use((config) => {
