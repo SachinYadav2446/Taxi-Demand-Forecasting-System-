@@ -4,6 +4,9 @@ datasets/
 backend/taxi_system.db
 backend/node_modules/
 backend/.serverless/
+model_service/__pycache__
+model_service/model_cache
+model_service/*.pkl
 __pycache__
 *.pyc
 .env
