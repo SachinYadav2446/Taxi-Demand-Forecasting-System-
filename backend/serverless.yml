@@ -5,6 +5,8 @@ provider:
   name: aws
   region: us-east-1 # Change to your preferred region
   stage: prod
+  memorySize: 2048
+  timeout: 30
   ecr:
     images:
       appimage:
