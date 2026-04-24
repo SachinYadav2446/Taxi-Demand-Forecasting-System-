@@ -157,21 +157,21 @@ export default function ZoneMap() {
       }));
   }, [data]);
 
-  const treemapData = useMemo(() => {
-    const grouped = data.reduce((acc, curr) => {
-      const b = curr.borough || 'Unknown';
-      if (!acc[b]) {
-        acc[b] = { name: b, value: 0 };
-      }
-      acc[b].value += (curr.value || 0);
-      return acc;
-    }, {});
-    return Object.values(grouped).sort((a, b) => b.value - a.value);
+  const boroughData = useMemo(() => {
+    const boroughs = {};
+    data.forEach(item => {
+      const b = item.borough || 'Unknown';
+      boroughs[b] = (boroughs[b] || 0) + (item.value || 0);
+    });
+    return Object.entries(boroughs).map(([name, value]) => ({
+      name: `BOROUGH: ${name}`,
+      value: value
+    })).sort((a, b) => b.value - a.value);
   }, [data]);
 
   const maxBoroughValue = useMemo(() => {
-    return Math.max(...treemapData.map(b => b.value), 1);
-  }, [treemapData]);
+    return Math.max(...boroughData.map(b => b.value), 1);
+  }, [boroughData]);
 
   const maxPickups = useMemo(() => {
     return Math.max(...data.map(z => z.value || 0), 1);
@@ -220,7 +220,7 @@ export default function ZoneMap() {
             className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all ${viewMode === 'area' ? (isDark ? 'bg-[#222] text-orange-500 shadow-sm' : 'bg-white text-orange-500 shadow-sm') : (isDark ? 'text-slate-500 hover:text-slate-300' : 'text-slate-500 hover:text-slate-700')
               }`}
           >
-            <Grid3X3 size={14} /> Live Area Map
+            <Grid3X3 size={14} /> Live Area Map (V2)
           </button>
         </div>
         <div className={`hidden md:flex items-center gap-4 px-4 py-2 rounded-xl border ${isDark ? 'bg-[#111]/50 border-[#222]/50' : 'bg-slate-50 border-slate-200'}`}>
@@ -347,7 +347,7 @@ export default function ZoneMap() {
           <div className="w-full h-full p-4">
             <ResponsiveContainer width="100%" height="100%">
               <Treemap
-                data={treemapData}
+                data={boroughData}
                 dataKey="value"
                 aspectRatio={4 / 3}
                 stroke="#fff"
