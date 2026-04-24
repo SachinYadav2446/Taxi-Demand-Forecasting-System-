@@ -26,69 +26,49 @@ function getColor(pickups, maxPickups) {
 
 // --- Area Map (Treemap) Components ---
 const CustomizedContent = (props) => {
-  const { depth, x, y, width, height, index, name, value, onZoneClick, maxPickups } = props;
+  const { x, y, width, height, name, value, onZoneClick, maxPickups } = props;
   
-  if (depth === 2) {
-    const ratio = value / (maxPickups || 1);
-    let heatColor = '#fbbf24'; // Yellow
-    if (ratio > 0.7) heatColor = '#ef4444'; // Red
-    else if (ratio > 0.4) heatColor = '#f97316'; // Orange
-    else if (ratio > 0.15) heatColor = '#f59e0b'; // Amber
+  if (!name) return null;
 
-    return (
-      <g onClick={() => onZoneClick && onZoneClick({ name, value, index })}>
-        <rect
-          x={x} y={y} width={width} height={height}
-          style={{
-            fill: heatColor,
-            stroke: '#111111',
-            strokeWidth: 2,
-            transition: 'all 0.3s ease',
-          }}
-          className="cursor-crosshair hover:brightness-125"
-        />
-        {width > 40 && height > 30 ? (
+  const heatColor = getColor(value, maxPickups);
+
+  return (
+    <g onClick={() => onZoneClick && onZoneClick({ name, value })}>
+      <rect
+        x={x} y={y} width={width} height={height}
+        style={{
+          fill: heatColor,
+          stroke: '#111111',
+          strokeWidth: 2,
+          transition: 'all 0.3s ease',
+        }}
+        className="cursor-pointer hover:brightness-110"
+      />
+      {width > 60 && height > 40 ? (
+        <g>
           <text
-            x={x + width / 2} y={y + height / 2 + 4}
+            x={x + width / 2} y={y + height / 2 - 5}
             textAnchor="middle" fill="#ffffff"
-            fontSize={height > 80 ? 14 : 10}
+            fontSize={Math.min(width / 10, 22)}
+            fontWeight="900"
+            style={{ fontFamily: 'Sora, sans-serif', pointerEvents: 'none', textTransform: 'uppercase', letterSpacing: '0.02em' }}
+          >
+            {name}
+          </text>
+          <text
+            x={x + width / 2} y={y + height / 2 + 18}
+            textAnchor="middle" fill="#ffffff"
+            fillOpacity={0.9}
+            fontSize={Math.min(width / 15, 14)}
             fontWeight="700"
             style={{ fontFamily: 'Sora, sans-serif', pointerEvents: 'none' }}
           >
-            {name}
+            {value?.toLocaleString()} rides
           </text>
-        ) : null}
-      </g>
-    );
-  }
-  
-  if (depth === 1) {
-    return (
-      <g>
-        <rect
-          x={x} y={y} width={width} height={height}
-          style={{
-            fill: 'transparent',
-            stroke: '#222222',
-            strokeWidth: 4,
-          }}
-          pointerEvents="none"
-        />
-        {width > 50 && height > 30 ? (
-          <text
-            x={x + 6} y={y + 16}
-            textAnchor="start" fill="#aaaaaa"
-            fontSize={12}
-            fontWeight="800"
-            style={{ fontFamily: 'Sora, sans-serif', pointerEvents: 'none', textTransform: 'uppercase', letterSpacing: '0.05em' }}
-          >
-            {name}
-          </text>
-        ) : null}
-      </g>
-    );
-  }
-  return null;
+        </g>
+      ) : null}
+    </g>
+  );
 };
 
 const AreaTooltip = ({ active, payload }) => {
@@ -179,14 +159,19 @@ export default function ZoneMap() {
 
   const treemapData = useMemo(() => {
     const grouped = data.reduce((acc, curr) => {
-      if (!acc[curr.borough]) {
-        acc[curr.borough] = { name: curr.borough, children: [] };
+      const b = curr.borough || 'Unknown';
+      if (!acc[b]) {
+        acc[b] = { name: b, value: 0 };
       }
-      acc[curr.borough].children.push({ name: curr.name, value: curr.value });
+      acc[b].value += (curr.value || 0);
       return acc;
     }, {});
-    return Object.values(grouped);
+    return Object.values(grouped).sort((a, b) => b.value - a.value);
   }, [data]);
+
+  const maxBoroughValue = useMemo(() => {
+    return Math.max(...treemapData.map(b => b.value), 1);
+  }, [treemapData]);
 
   const maxPickups = useMemo(() => {
     return Math.max(...data.map(z => z.value || 0), 1);
@@ -366,8 +351,7 @@ export default function ZoneMap() {
                 dataKey="value"
                 aspectRatio={4 / 3}
                 stroke="#fff"
-                fill="#8884d8"
-                content={<CustomizedContent coloring={HEATMAP_COLORS} onZoneClick={setSelectedZone} />}
+                content={<CustomizedContent onZoneClick={setSelectedZone} maxPickups={maxBoroughValue} />}
               >
                 <ChartTooltip content={<AreaTooltip />} />
               </Treemap>
