@@ -5,7 +5,7 @@ import { useTheme } from '../context/ThemeContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   MapPinned, Activity, LogOut, Home, Zap, TrendingUp,
-  Building2, ChevronLeft, ChevronRight, Sparkles, User
+  Building2, ChevronLeft, ChevronRight, Sparkles, User, CloudRain
 } from 'lucide-react';
 
 const ACCENT_CSS_MAP = {
@@ -140,6 +140,7 @@ export default function Layout() {
       navItems.push({ label: 'Zone Management', path: '/zones', icon: <MapPinned size={16} /> });
     }
     navItems.push({ label: 'Demand Forecast', path: '/forecast', icon: <Activity size={16} /> });
+    navItems.push({ label: 'Enhanced Forecast', path: '/enhanced-forecast', icon: <CloudRain size={16} /> });
   }
 
   if (loading) {

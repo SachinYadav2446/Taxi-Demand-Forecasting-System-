@@ -13,31 +13,19 @@ SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://myuser:mypassw
 if SQLALCHEMY_DATABASE_URL and SQLALCHEMY_DATABASE_URL.startswith("postgres://"):
     SQLALCHEMY_DATABASE_URL = SQLALCHEMY_DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
-# SSL Configuration for RDS
-connect_args = {}
-if "sslrootcert" in SQLALCHEMY_DATABASE_URL:
-    # If parameters are in the URL string, SQLAlchemy handles them
-    pass
-else:
-    # Try to find global-bundle.pem in current dir or parent dir (for Lambda)
-    cert_path = os.path.join(os.path.dirname(__file__), "global-bundle.pem")
-    if not os.path.exists(cert_path):
-        # Fallback to current working directory
-        cert_path = "global-bundle.pem"
-        
-    if os.path.exists(cert_path):
-        # Using 'require' is safer than 'verify-full' if there are hostname mismatches,
-        # but still ensures encrypted connection.
-        connect_args = {
-            "sslmode": "require",
-            "sslrootcert": cert_path
-        }
+# Neon DB (and most managed Postgres) handles SSL via the connection string.
+# No extra cert files needed — sslmode=require is already in the URL.
+connect_args = {
+    "connect_timeout": 10,
+    "options": "-c idle_in_transaction_session_timeout=30000"
+}
 
 engine = create_engine(
     SQLALCHEMY_DATABASE_URL,
-    pool_pre_ping=True,
-    pool_size=5,
-    max_overflow=10,
+    pool_pre_ping=True,   # Reconnects if Neon wakes from sleep
+    pool_size=1,          # MINIMIZE for free tier/serverless
+    max_overflow=2,       # MINIMIZE for free tier/serverless
+    pool_recycle=1800,    # Recycle connections every 30 min
     connect_args=connect_args
 )
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)

@@ -11,3 +11,6 @@ api.interceptors.request.use((config) => {
   }
   return config;
 });
+
+// Default export for convenience
+export default api;

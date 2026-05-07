@@ -43,12 +43,23 @@ app.add_middleware(
 
 # 4. Import and Include Routers
 from routers import auth, zones, forecasts, contact, intelligence
+# Import enhanced forecasts (with external data integration)
+try:
+    from routers import enhanced_forecasts
+    ENHANCED_FORECASTS_AVAILABLE = True
+except ImportError as e:
+    print(f"Warning: Enhanced forecasts not available: {e}")
+    ENHANCED_FORECASTS_AVAILABLE = False
 
 app.include_router(auth.router)
 app.include_router(zones.router)
 app.include_router(forecasts.router)
 app.include_router(contact.router)
 app.include_router(intelligence.router)
+
+if ENHANCED_FORECASTS_AVAILABLE:
+    app.include_router(enhanced_forecasts.router)
+    print("✅ Enhanced forecasts with external data integration enabled!")
 
 # 5. Startup logic
 @app.on_event("startup")

@@ -8,13 +8,12 @@ RUN apt-get update && apt-get install -y \
     libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements from backend
-COPY backend/requirements.txt .
+# Copy requirements
+COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy backend and model_service
-COPY backend/ /app/
-COPY model_service/ /app/model_service/
+# Copy application code
+COPY . /app/
 
 # Ensure the app can find the modules
 ENV PYTHONPATH=/app

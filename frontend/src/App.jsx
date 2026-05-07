@@ -6,6 +6,7 @@ import Register from './pages/Register';
 import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';
 import DemandForecast from './pages/DemandForecast';
+import EnhancedForecast from './pages/EnhancedForecast';
 import ZoneManagement from './pages/ZoneManagement';
 import SettingsPage from './pages/Settings';
 import OperatorSupport from './pages/OperatorSupport';
@@ -46,6 +47,7 @@ export default function App() {
           <Route element={<Layout />}>
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/forecast" element={<ProtectedRoute><DemandForecast /></ProtectedRoute>} />
+            <Route path="/enhanced-forecast" element={<ProtectedRoute><EnhancedForecast /></ProtectedRoute>} />
             <Route path="/zones" element={<ProtectedRoute requireOperator><ZoneManagement /></ProtectedRoute>} />
             <Route path="/support" element={<ProtectedRoute><OperatorSupport /></ProtectedRoute>} />
           </Route>
