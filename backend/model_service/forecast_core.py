@@ -16,11 +16,18 @@ from statsmodels.tsa.statespace.sarimax import SARIMAX
 # Import advanced forecasting
 from .advanced_forecast import generate_advanced_forecast
 
+# Import ensemble forecasting (Holt-Winters, Prophet, SARIMAX-Pro weighted combo)
+from .ensemble_forecast import (
+    generate_ensemble_forecast,
+    compare_models_for_zone,
+    get_feature_importance_for_zone,
+)
+
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-MODEL_NAME = "SARIMAX-Pro"
+MODEL_NAME = "Ensemble-SARIMAX-Pro"
 
 # Default paths
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -178,18 +185,27 @@ def generate_forecast(
             logger.warning(f"Error parsing requested_date {requested_date}: {e}")
     
     try:
-        # Try advanced ensemble model first
-        logger.info(f"Attempting advanced forecast for location {location_id}")
+        # TIER 1: Weighted Ensemble (Holt-Winters + Prophet + SARIMAX-Pro) — best accuracy
+        logger.info(f"Tier 1: Attempting Ensemble forecast for location {location_id}")
+        try:
+            ensemble_result = generate_ensemble_forecast(
+                location_id, ts, horizon, periods, requested_date, requested_time
+            )
+            if ensemble_result is not None:
+                logger.info(f"Tier 1: Ensemble successful for location {location_id}")
+                return ensemble_result
+        except Exception as exc:
+            logger.warning(f"Tier 1: Ensemble failed for {location_id}: {exc}")
+
+        # TIER 2: Advanced SARIMAX-Pro (exogenous features from advanced_forecast)
+        logger.info(f"Tier 2: Attempting Advanced SARIMAX-Pro for location {location_id}")
         advanced_result = generate_advanced_forecast(location_id, ts, horizon, periods, requested_date, requested_time)
-        
         if advanced_result is not None:
-            logger.info(f"Advanced forecast successful for location {location_id}")
+            logger.info(f"Tier 2: Advanced SARIMAX-Pro successful for location {location_id}")
             return advanced_result
-        
-        # Fallback to SARIMAX if advanced model fails
-        logger.warning(f"Advanced model failed, falling back to SARIMAX")
-        
-        # Fit SARIMAX model
+
+        # TIER 3: Vanilla SARIMAX fallback
+        logger.warning(f"Tier 3: Falling back to vanilla SARIMAX for location {location_id}")
         model = SARIMAX(
             ts,
             order=(1, 1, 1),
@@ -197,53 +213,40 @@ def generate_forecast(
             enforce_stationarity=False,
             enforce_invertibility=False
         )
-        
         results = model.fit(disp=False)
-        
-        # Generate forecast
         forecast_result = results.get_forecast(steps=periods)
         forecast_mean = forecast_result.predicted_mean
         forecast_ci = forecast_result.conf_int()
-        
-        # Create forecast timestamps (rounded to the hour)
+
         last_timestamp = ts.index[-1]
         next_hour = last_timestamp + timedelta(hours=1)
         next_hour = next_hour.replace(minute=0, second=0, microsecond=0)
-        
-        future_timestamps = pd.date_range(
-            start=next_hour,
-            periods=periods,
-            freq=freq
-        )
-        
-        # Build historical data (last 24 periods)
+        future_timestamps = pd.date_range(start=next_hour, periods=periods, freq=freq)
+
         historical_data = []
         historical_start = max(0, len(ts) - 24)
         for i in range(historical_start, len(ts)):
             timestamp = ts.index[i]
             historical_data.append({
                 "timestamp": timestamp.isoformat(),
-                "actual": int(max(0, round(ts.iloc[i], 2)))
+                "actual": int(max(0, round(ts.iloc[i], 2))),
             })
-        
-        # Build predicted data
+
         predicted_data = []
         peak_demand = 0
         peak_timestamp = None
-        
         for i, timestamp in enumerate(future_timestamps):
             predicted_val = max(0, round(forecast_mean.iloc[i], 2))
             predicted_data.append({
                 "timestamp": timestamp.isoformat(),
                 "predicted": predicted_val,
                 "confidence_lower": max(0, round(forecast_ci.iloc[i, 0], 2)),
-                "confidence_upper": max(0, round(forecast_ci.iloc[i, 1], 2))
+                "confidence_upper": max(0, round(forecast_ci.iloc[i, 1], 2)),
             })
-            
             if predicted_val > peak_demand:
                 peak_demand = predicted_val
                 peak_timestamp = timestamp.isoformat()
-        
+
         return {
             "historical": historical_data,
             "predicted": predicted_data,
@@ -252,22 +255,21 @@ def generate_forecast(
                 "model_type": "sarimax",
                 "data_points": len(ts),
                 "estimated_accuracy": 75,
-                "confidence_band": "medium"
+                "confidence_band": "medium",
             },
             "requested_window": {
                 "timestamp": future_timestamps[0].isoformat() if len(future_timestamps) > 0 else None,
                 "predicted_demand": predicted_data[0]["predicted"] if len(predicted_data) > 0 else 0,
-                "available": True
+                "available": True,
             },
             "peak_window": {
                 "timestamp": peak_timestamp,
-                "predicted_demand": float(peak_demand)
-            } if peak_timestamp else None
+                "predicted_demand": float(peak_demand),
+            } if peak_timestamp else None,
         }
-        
+
     except Exception as e:
         logger.error(f"Error in forecast generation: {e}")
-        # Fallback to simple moving average forecast
         return generate_simple_forecast(ts, location_id, horizon, periods, freq, requested_date, requested_time)
 
 
