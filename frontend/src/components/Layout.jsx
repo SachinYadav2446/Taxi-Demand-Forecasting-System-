@@ -4,7 +4,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useTheme } from '../context/ThemeContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  MapPinned, Activity, LogOut, Home, Zap, TrendingUp,
+  MapPinned, Activity, LogOut, Home, Zap, TrendingUp, Layers,
   Building2, ChevronLeft, ChevronRight, Sparkles, User, CloudRain
 } from 'lucide-react';
 
@@ -141,6 +141,7 @@ export default function Layout() {
     }
     navItems.push({ label: 'Demand Forecast', path: '/forecast', icon: <Activity size={16} /> });
     navItems.push({ label: 'Enhanced Forecast', path: '/enhanced-forecast', icon: <CloudRain size={16} /> });
+    navItems.push({ label: 'Model Lab', path: '/model-comparison', icon: <Layers size={16} /> });
   }
 
   if (loading) {
