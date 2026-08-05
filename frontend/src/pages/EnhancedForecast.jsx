@@ -1,453 +1,978 @@
-import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import axios from '../lib/axios';
+import { useState, useEffect, useMemo, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { api } from '../lib/axios';
+import { useAuth } from '../hooks/useAuth';
+import { useTheme } from '../context/ThemeContext';
 import {
-  CloudRain,
-  Music,
-  Train,
-  Plane,
-  TrendingUp,
-  AlertCircle,
-  CheckCircle,
-  Zap,
-  BarChart3,
-  Clock
+  CloudRain, Music, Train, Plane, TrendingUp, CheckCircle,
+  Zap, BarChart3, Clock, ChevronDown, Layers, Star,
+  AlertCircle, Sparkles, Target, Gauge, Info, Sliders,
 } from 'lucide-react';
 
+const MODEL_CHIPS = [
+  { key: 'ensemble',      label: 'Ensemble',     color: '#f43f5e' },
+  { key: 'holt_winters',  label: 'Holt-Winters', color: '#06b6d4' },
+  { key: 'prophet',       label: 'Prophet',      color: '#8b5cf6' },
+  { key: 'lightgbm',      label: 'LightGBM',     color: '#10b981' },
+  { key: 'sarimax_pro',   label: 'SARIMAX-Pro',  color: '#f97316' },
+];
+
+function ForecastSvgChart({
+  historical, predicted, perModelBreakdown, activeModelKey, isDark, height = 320,
+}) {
+  const [hoveredIdx, setHoveredIdx] = useState(null);
+  const chartRef = useRef(null);
+
+  const historicalVals = (historical || []).map((h) => ({ t: h.timestamp, v: h.actual ?? 0 }));
+  const predictedVals = (predicted || []).map((p) => ({
+    t: p.timestamp,
+    v: p.predicted ?? 0,
+    lo: p.confidence_lower ?? 0,
+    hi: p.confidence_upper ?? 0,
+    surge: p.surge_multiplier ?? 1,
+    rev: p.projected_revenue ?? 0,
+  }));
+
+  const modelBreakdown = perModelBreakdown || {};
+  const activeChip = MODEL_CHIPS.find((c) => c.key === activeModelKey) || MODEL_CHIPS[0];
+
+  const showSeries = useMemo(() => {
+    if (activeModelKey !== 'ensemble' && modelBreakdown[activeModelKey]) {
+      const raw = modelBreakdown[activeModelKey].map((m) => m.predicted ?? 0);
+      return { main: raw, color: activeChip.color };
+    }
+    return { main: predictedVals.map((p) => p.v), color: activeChip.color };
+  }, [activeModelKey, modelBreakdown, predictedVals, activeChip]);
+
+  const allValues = useMemo(() => {
+    const a = historicalVals.map((h) => h.v);
+    const b = showSeries.main;
+    const c = predictedVals.flatMap((p) => [p.lo, p.hi]);
+    return [...a, ...b, ...c];
+  }, [historicalVals, showSeries, predictedVals]);
+
+  const maxVal = Math.max(1, ...allValues);
+  const minVal = 0;
+
+  const width = 1000;
+  const padding = { l: 54, r: 20, t: 28, b: 46 };
+  const plotW = width - padding.l - padding.r;
+  const plotH = height - padding.t - padding.b;
+
+  const nHist = historicalVals.length;
+  const nPred = predictedVals.length;
+  const totalPts = nHist + nPred;
+
+  const xFor = (i) => padding.l + (i / Math.max(1, totalPts - 1)) * plotW;
+
+  const yFor = (v) => padding.t + plotH - ((v - minVal) / (maxVal - minVal)) * plotH;
+
+  const bezier = (points) => {
+    if (points.length < 2) return '';
+    let d = `M ${points[0][0]} ${points[0][1]}`;
+    for (let i = 0; i < points.length - 1; i++) {
+      const [x0, y0] = points[i];
+      const [x1, y1] = points[i + 1];
+      const cpx = (x0 + x1) / 2;
+      d += ` C ${cpx} ${y0}, ${cpx} ${y1}, ${x1} ${y1}`;
+    }
+    return d;
+  };
+
+  const histPoints = historicalVals.map((h, i) => [xFor(i), yFor(h.v)]);
+  const predPoints = showSeries.main.map((v, i) => [xFor(nHist + i), yFor(v)]);
+
+  const loPoints = predictedVals.map((p, i) => [xFor(nHist + i), yFor(Math.max(0, p.lo))]);
+  const hiPoints = predictedVals.map((p, i) => [xFor(nHist + i), yFor(p.hi)]);
+  const areaPath = (() => {
+    if (loPoints.length < 2) return '';
+    const top = bezier(hiPoints);
+    const bottom = bezier(loPoints.slice().reverse()).replace(/^M/, 'L');
+    return `${top} ${bottom} Z`;
+  })();
+
+  const gridYCount = 5;
+  const gridLines = Array.from({ length: gridYCount + 1 }, (_, i) => {
+    const v = (i / gridYCount) * (maxVal - minVal) + minVal;
+    return { y: yFor(v), label: v.toFixed(0) };
+  });
+
+  const xTickEvery = Math.max(1, Math.floor(totalPts / 8));
+  const xTicks = Array.from({ length: totalPts }, (_, i) => i)
+    .filter((i) => i % xTickEvery === 0 || i === totalPts - 1)
+    .map((i) => ({
+      x: xFor(i),
+      label: (() => {
+        const raw = i < nHist ? historicalVals[i]?.t : predictedVals[i - nHist]?.t;
+        if (!raw) return '';
+        const d = new Date(raw);
+        return d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+      })(),
+    }));
+
+  const dividerX = nHist > 0 ? xFor(nHist - 0.5) : padding.l;
+
+  const hovered = useMemo(() => {
+    if (hoveredIdx === null) return null;
+    if (hoveredIdx < nHist) {
+      return {
+        x: histPoints[hoveredIdx][0],
+        y: histPoints[hoveredIdx][1],
+        label: 'Actual',
+        value: historicalVals[hoveredIdx].v,
+        time: historicalVals[hoveredIdx].t,
+        isHist: true,
+      };
+    }
+    const pi = hoveredIdx - nHist;
+    const pv = predictedVals[pi];
+    const mv = showSeries.main[pi];
+    return {
+      x: predPoints[pi][0],
+      y: predPoints[pi][1],
+      label: MODEL_CHIPS.find((c) => c.key === activeModelKey)?.label || 'Predicted',
+      value: mv,
+      lo: pv?.lo,
+      hi: pv?.hi,
+      time: pv?.t,
+      surge: pv?.surge,
+      rev: pv?.rev,
+      isHist: false,
+    };
+  }, [hoveredIdx, nHist, histPoints, predPoints, historicalVals, predictedVals, showSeries, activeModelKey]);
+
+  const handleMove = (e) => {
+    if (!chartRef.current) return;
+    const rect = chartRef.current.getBoundingClientRect();
+    const relX = ((e.clientX - rect.left) / rect.width) * width;
+    if (relX < padding.l - 5 || relX > width - padding.r + 5) {
+      setHoveredIdx(null);
+      return;
+    }
+    const frac = (relX - padding.l) / plotW;
+    const i = Math.max(0, Math.min(totalPts - 1, Math.round(frac * (totalPts - 1))));
+    setHoveredIdx(i);
+  };
+
+  const gradId = `histgrad-${isDark ? 'd' : 'l'}`;
+  const predGradId = `predgrad-${isDark ? 'd' : 'l'}`;
+
+  return (
+    <div className="relative w-full" ref={chartRef}>
+      <svg
+        viewBox={`0 0 ${width} ${height}`}
+        className="w-full h-auto select-none"
+        onMouseMove={handleMove}
+        onMouseLeave={() => setHoveredIdx(null)}
+      >
+        <defs>
+          <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={isDark ? '#fb923c' : '#f97316'} stopOpacity="0.28" />
+            <stop offset="100%" stopColor={isDark ? '#fb923c' : '#f97316'} stopOpacity="0" />
+          </linearGradient>
+          <linearGradient id={predGradId} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={activeChip.color} stopOpacity="0.26" />
+            <stop offset="100%" stopColor={activeChip.color} stopOpacity="0" />
+          </linearGradient>
+          <filter id="glowline" x="-10%" y="-50%" width="120%" height="200%">
+            <feGaussianBlur stdDeviation="3" result="b" />
+            <feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge>
+          </filter>
+        </defs>
+
+        {gridLines.map((g, i) => (
+          <g key={i}>
+            <line
+              x1={padding.l} x2={width - padding.r} y1={g.y} y2={g.y}
+              stroke={isDark ? 'rgba(255,255,255,0.05)' : 'rgba(15,23,42,0.06)'}
+              strokeDasharray="3 4" strokeWidth={1}
+            />
+            <text
+              x={padding.l - 10} y={g.y + 4}
+              textAnchor="end"
+              fontSize={10.5} fontWeight={700}
+              fill={isDark ? 'rgba(255,255,255,0.45)' : 'rgba(15,23,42,0.5)'}
+            >
+              {g.label}
+            </text>
+          </g>
+        ))}
+
+        <line
+          x1={dividerX} x2={dividerX}
+          y1={padding.t - 6} y2={height - padding.b + 6}
+          stroke={isDark ? 'rgba(255,255,255,0.12)' : 'rgba(15,23,42,0.2)'}
+          strokeWidth={1} strokeDasharray="4 3"
+        />
+        <rect
+          x={padding.l} y={padding.t - 12}
+          width={dividerX - padding.l} height={12}
+          rx={4}
+          fill={isDark ? 'rgba(251,146,60,0.12)' : 'rgba(249,115,22,0.10)'}
+        />
+        <rect
+          x={dividerX} y={padding.t - 12}
+          width={(width - padding.r) - dividerX} height={12}
+          rx={4}
+          fill={`${activeChip.color}20`}
+        />
+        <text x={padding.l + 6} y={padding.t - 3} fontSize={9.5} fontWeight={800}
+          fill={isDark ? 'rgba(251,146,60,0.9)' : 'rgba(249,115,22,0.9)'}
+          letterSpacing={0.8}>
+          HISTORICAL
+        </text>
+        <text x={dividerX + 6} y={padding.t - 3} fontSize={9.5} fontWeight={800}
+          fill={activeChip.color} letterSpacing={0.8}>
+          {activeChip.label.toUpperCase()} FORECAST
+        </text>
+
+        {xTicks.map((t, i) => (
+          <text
+            key={i}
+            x={t.x} y={height - padding.b + 22}
+            textAnchor="middle"
+            fontSize={10} fontWeight={700}
+            fill={isDark ? 'rgba(255,255,255,0.5)' : 'rgba(15,23,42,0.55)'}
+          >
+            {t.label}
+          </text>
+        ))}
+
+        {predictedVals.length > 1 && areaPath && (
+          <path d={areaPath} fill={activeChip.color} opacity={0.11} />
+        )}
+
+        {histPoints.length > 1 && (
+          <>
+            <path
+              d={`${bezier(histPoints)} L ${histPoints[histPoints.length - 1][0]} ${padding.t + plotH} L ${histPoints[0][0]} ${padding.t + plotH} Z`}
+              fill={`url(#${gradId})`}
+            />
+            <path
+              d={bezier(histPoints)}
+              fill="none"
+              stroke={isDark ? '#fb923c' : '#f97316'}
+              strokeWidth={2.4}
+              strokeLinecap="round"
+              filter="url(#glowline)"
+            />
+          </>
+        )}
+
+        {predPoints.length > 1 && (
+          <>
+            <path
+              d={`${bezier(predPoints)} L ${predPoints[predPoints.length - 1][0]} ${padding.t + plotH} L ${predPoints[0][0]} ${padding.t + plotH} Z`}
+              fill={`url(#${predGradId})`}
+            />
+            <path
+              d={bezier(predPoints)}
+              fill="none"
+              stroke={activeChip.color}
+              strokeWidth={2.8}
+              strokeLinecap="round"
+              filter="url(#glowline)"
+            />
+          </>
+        )}
+
+        {hovered && (
+          <g>
+            <line
+              x1={hovered.x} x2={hovered.x}
+              y1={padding.t - 10} y2={height - padding.b + 10}
+              stroke={isDark ? 'rgba(255,255,255,0.25)' : 'rgba(15,23,42,0.25)'}
+              strokeWidth={1}
+            />
+            <circle
+              cx={hovered.x} cy={hovered.y} r={7}
+              fill={hovered.isHist ? (isDark ? '#fb923c' : '#f97316') : activeChip.color}
+              stroke={isDark ? '#050505' : '#ffffff'}
+              strokeWidth={2.5}
+            />
+          </g>
+        )}
+      </svg>
+
+      <AnimatePresence>
+        {hovered && (
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 8 }}
+            className={`pointer-events-none absolute z-20 rounded-2xl border px-4 py-3 shadow-2xl backdrop-blur-xl ${
+              isDark
+                ? 'border-white/10 bg-[#0a0a0a]/95'
+                : 'border-slate-200 bg-white/95'
+            }`}
+            style={{
+              left: `calc(${(hovered.x / width) * 100}% + 14px)`,
+              top: `calc(${(hovered.y / height) * 100}% - 20px)`,
+              transform: (hovered.x / width > 0.72) ? 'translateX(-110%)' : 'none',
+            }}
+          >
+            <div className={`text-[10.5px] font-black uppercase tracking-[0.18em] mb-1 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+              {new Date(hovered.time).toLocaleString('en-US', { weekday: 'short', hour: '2-digit', minute: '2-digit' })}
+            </div>
+            <div className="flex items-center gap-2 mb-1">
+              <span className="w-2.5 h-2.5 rounded-full" style={{ background: hovered.isHist ? (isDark ? '#fb923c' : '#f97316') : activeChip.color }} />
+              <span className={`text-[11.5px] font-bold uppercase tracking-wide ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                {hovered.label}
+              </span>
+              <span className={`text-[18px] font-black tabular-nums ml-auto ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                {Math.round(hovered.value)}
+              </span>
+            </div>
+            {!hovered.isHist && hovered.lo !== undefined && (
+              <div className={`text-[11px] font-semibold ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                90% CI: <span className="font-black">{Math.round(hovered.lo)} – {Math.round(hovered.hi)}</span>
+              </div>
+            )}
+            {!hovered.isHist && hovered.surge > 1 && (
+              <div className={`text-[11px] font-bold mt-0.5 ${isDark ? 'text-orange-400' : 'text-orange-600'}`}>
+                ⚡ Surge ×{hovered.surge.toFixed(2)}
+              </div>
+            )}
+            {!hovered.isHist && hovered.rev > 0 && (
+              <div className={`text-[11px] font-bold mt-0.5 ${isDark ? 'text-emerald-400' : 'text-emerald-700'}`}>
+                💰 ${hovered.rev.toLocaleString()} est. revenue
+              </div>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
 export default function EnhancedForecast() {
-  const [selectedZone, setSelectedZone] = useState(237);
+  const { user } = useAuth();
+  const { mode } = useTheme();
+  const isDark = mode !== 'light';
+
+  const [selectedZone, setSelectedZone] = useState('');
   const [zones, setZones] = useState([]);
+  const [zoneDropdownOpen, setZoneDropdownOpen] = useState(false);
   const [weather, setWeather] = useState(null);
   const [events, setEvents] = useState(null);
   const [forecast, setForecast] = useState(null);
   const [externalFeatures, setExternalFeatures] = useState(null);
   const [comparison, setComparison] = useState(null);
+  const [importance, setImportance] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [horizon, setHorizon] = useState('hourly');
+  const [activeModel, setActiveModel] = useState('ensemble');
 
   useEffect(() => {
+    const fetchZones = async () => {
+      try {
+        const endpoint = user?.role === 'operator' ? '/zones/company' : '/zones/';
+        const res = await api.get(endpoint);
+        let availableZones = [];
+        if (user?.role === 'operator') {
+          availableZones = res.data;
+        } else {
+          Object.values(res.data).forEach((arr) => {
+            availableZones = [...availableZones, ...arr];
+          });
+        }
+        setZones(availableZones);
+        if (availableZones.length) {
+          setSelectedZone(availableZones[0].location_id.toString());
+        }
+      } catch (err) {
+        console.error('zones', err);
+        setZones([]);
+      }
+    };
     fetchZones();
     fetchWeather();
     fetchEvents();
-  }, []);
+  }, [user]);
 
   useEffect(() => {
-    if (selectedZone) {
-      fetchEnhancedForecast();
-      fetchExternalFeatures();
-      fetchComparison();
-    }
-  }, [selectedZone]);
-
-  const fetchZones = async () => {
-    try {
-      const response = await axios.get('/zones');
-      setZones(response.data || []);
-    } catch (error) {
-      console.error('Error fetching zones:', error);
-      setZones([]);
-    }
-  };
+    if (!selectedZone) return;
+    const fetchAll = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const [f, xf, cmp, imp] = await Promise.all([
+          api.get(`/forecasts/${selectedZone}?horizon=${horizon}`),
+          api.get(`/enhanced-forecasts/${selectedZone}/external-features`).catch(() => null),
+          api.get(`/forecasts/${selectedZone}/compare`).catch(() => null),
+          api.get(`/forecasts/${selectedZone}/feature-importance`).catch(() => null),
+        ]);
+        setForecast(f.data);
+        setExternalFeatures(xf?.data || null);
+        setComparison(cmp?.data || null);
+        setImportance(imp?.data || null);
+      } catch (err) {
+        console.error(err);
+        setError(err.response?.data?.detail || 'Forecast unavailable for this zone.');
+        setForecast(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchAll();
+  }, [selectedZone, horizon]);
 
   const fetchWeather = async () => {
     try {
-      const response = await axios.get('/enhanced-forecasts/weather/current');
-      setWeather(response.data);
-    } catch (error) {
-      console.error('Error fetching weather:', error);
-      setWeather(null);
+      const res = await api.get('/enhanced-forecasts/weather/current');
+      setWeather(res.data);
+    } catch (e) {
+      console.warn(e);
     }
   };
-
   const fetchEvents = async () => {
     try {
-      const response = await axios.get('/enhanced-forecasts/events/upcoming?hours=48');
-      setEvents(response.data);
-    } catch (error) {
-      console.error('Error fetching events:', error);
-      setEvents(null);
+      const res = await api.get('/enhanced-forecasts/events/upcoming?hours=48');
+      setEvents(res.data);
+    } catch (e) {
+      console.warn(e);
     }
   };
 
-  const fetchEnhancedForecast = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const response = await axios.get(`/enhanced-forecasts/${selectedZone}/forecast?steps=24`);
-      setForecast(response.data);
-    } catch (error) {
-      console.error('Error fetching forecast:', error);
-      setError('Unable to load forecast. The model may need to be trained for this zone.');
-      setForecast(null);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const meta = forecast?.meta || {};
+  const peak = forecast?.peak_demand || forecast?.peak_window || null;
+  const avgDemand = forecast?.average_demand || 0;
+  const selectedZoneObj = zones.find((z) => z.location_id.toString() === selectedZone);
 
-  const fetchExternalFeatures = async () => {
-    try {
-      const response = await axios.get(`/enhanced-forecasts/${selectedZone}/external-features`);
-      setExternalFeatures(response.data);
-    } catch (error) {
-      console.error('Error fetching external features:', error);
-      setExternalFeatures(null);
-    }
-  };
+  const groupedImportance = importance?.grouped || {};
+  const importanceEntries = Object.entries(groupedImportance).sort((a, b) => b[1] - a[1]);
+  const maxImp = Math.max(1, ...importanceEntries.map(([, v]) => v));
 
-  const fetchComparison = async () => {
-    try {
-      const response = await axios.get(`/enhanced-forecasts/${selectedZone}/compare-models`);
-      setComparison(response.data);
-    } catch (error) {
-      console.error('Error fetching comparison:', error);
-      setComparison(null);
-    }
-  };
+  const estAcc = meta.estimated_accuracy ?? 0;
+  const estBand = meta.confidence_band || 'low';
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 dark:from-gray-900 dark:to-gray-800 p-6">
-      <div className="max-w-7xl mx-auto space-y-6">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8"
-        >
-          <div className="flex items-center gap-4 mb-4">
-            <div className="p-3 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl">
-              <Zap className="w-8 h-8 text-white" />
+    <div className="space-y-6">
+      {/* HEADER */}
+      <motion.div
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className={`rounded-3xl border p-6 md:p-8 shadow-2xl backdrop-blur-3xl bg-gradient-to-br ${
+          isDark
+            ? 'border-orange-500/20 from-orange-950/25 via-[#121212]/95 to-[#050505]/95'
+            : 'border-orange-500/20 from-orange-50/90 via-white to-orange-50/40'
+        }`}
+      >
+        <div className="flex items-start justify-between gap-6 flex-wrap">
+          <div className="flex items-center gap-4">
+            <div className="p-3.5 rounded-2xl bg-gradient-to-br from-violet-500 to-blue-600 shadow-[0_0_30px_rgba(139,92,246,0.35)]">
+              <Zap size={24} className="text-white" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-                Enhanced Forecasting
+              <div className="flex items-center gap-2 mb-1.5">
+                <span className="px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-[0.2em] bg-violet-500/15 text-violet-500 border border-violet-500/20">
+                  Ensemble Forecast
+                </span>
+                <span className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-[0.2em] ${
+                  estBand === 'high'
+                    ? 'bg-emerald-500/15 text-emerald-500 border border-emerald-500/20'
+                    : estBand === 'medium'
+                      ? 'bg-amber-500/15 text-amber-500 border border-amber-500/20'
+                      : 'bg-slate-500/15 text-slate-500 border border-slate-500/20'
+                }`}>
+                  Confidence · {estBand}
+                </span>
+              </div>
+              <h1 className={`text-2xl md:text-3xl font-black tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                Enhanced Demand Forecast
               </h1>
-              <p className="text-gray-600 dark:text-gray-400">
-                AI-powered predictions with real-time external data
+              <p className={`mt-1 text-sm ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                Multi-model stack with weather · events · holidays · lag features.
               </p>
             </div>
           </div>
 
-          {/* Zone Selector */}
-          <div className="mt-6">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Select Zone
-            </label>
-            <select
-              value={selectedZone}
-              onChange={(e) => setSelectedZone(Number(e.target.value))}
-              className="w-full md:w-96 px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
-            >
-              {zones.length > 0 ? (
-                zones.map((zone) => (
-                  <option key={zone.location_id} value={zone.location_id}>
-                    {zone.zone_name} - {zone.borough}
-                  </option>
-                ))
-              ) : (
-                <option value={237}>Zone 237 (Loading...)</option>
-              )}
-            </select>
-          </div>
-        </motion.div>
-
-        {/* Accuracy Comparison */}
-        {comparison && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl shadow-xl p-8 text-white"
-          >
-            <div className="flex items-center gap-3 mb-6">
-              <TrendingUp className="w-8 h-8" />
-              <h2 className="text-2xl font-bold">Accuracy Improvement</h2>
-            </div>
-
-            <div className="grid md:grid-cols-3 gap-6">
-              <div className="bg-white/10 backdrop-blur rounded-xl p-6">
-                <div className="text-sm opacity-90 mb-2">Basic Model (ARIMA)</div>
-                <div className="text-3xl font-bold mb-1">
-                  {comparison.comparison?.basic_arima?.test_mae?.toFixed(1) || '12.5'}
-                </div>
-                <div className="text-sm opacity-75">trips/hour error</div>
-              </div>
-
-              <div className="bg-white/10 backdrop-blur rounded-xl p-6">
-                <div className="text-sm opacity-90 mb-2">Enhanced Model (SARIMAX)</div>
-                <div className="text-3xl font-bold mb-1">
-                  {comparison.comparison?.enhanced_sarimax?.test_mae?.toFixed(1) || '8.7'}
-                </div>
-                <div className="text-sm opacity-75">trips/hour error</div>
-              </div>
-
-              <div className="bg-white/10 backdrop-blur rounded-xl p-6">
-                <div className="text-sm opacity-90 mb-2">Improvement</div>
-                <div className="text-3xl font-bold mb-1">
-                  {comparison.comparison?.improvement?.mae_reduction || '30.4%'}
-                </div>
-                <div className="text-sm opacity-75">better accuracy</div>
-              </div>
-            </div>
-
-            <div className="mt-6 p-4 bg-white/10 backdrop-blur rounded-xl">
-              <div className="flex items-center gap-2">
-                <CheckCircle className="w-5 h-5" />
-                <span className="font-medium">
-                  {comparison.comparison?.improvement?.recommendation || 'Enhanced model recommended for better accuracy'}
-                </span>
-              </div>
-            </div>
-          </motion.div>
-        )}
-
-        {/* External Data Cards */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {/* Weather */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6"
-          >
-            <div className="flex items-center gap-3 mb-4">
-              <CloudRain className="w-6 h-6 text-blue-500" />
-              <h3 className="font-semibold text-gray-900 dark:text-white">Weather</h3>
-            </div>
-            {weather ? (
-              <div className="space-y-2">
-                <div className="text-3xl font-bold text-gray-900 dark:text-white">
-                  {weather.temperature?.toFixed(0) || 'N/A'}°F
-                </div>
-                <div className="text-sm text-gray-600 dark:text-gray-400">
-                  {weather.weather || 'Clear'} - Humidity: {weather.humidity || 0}%
-                </div>
-                {weather.rain > 0 && (
-                  <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400">
-                    <AlertCircle className="w-4 h-4" />
-                    <span className="text-sm">Rain detected - Higher demand expected</span>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="text-gray-500">Loading weather data...</div>
-            )}
-          </motion.div>
-
-          {/* Events */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.1 }}
-            className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6"
-          >
-            <div className="flex items-center gap-3 mb-4">
-              <Music className="w-6 h-6 text-purple-500" />
-              <h3 className="font-semibold text-gray-900 dark:text-white">Events</h3>
-            </div>
-            {events ? (
-              <div className="space-y-2">
-                <div className="text-3xl font-bold text-gray-900 dark:text-white">
-                  {events.event_count || 0}
-                </div>
-                <div className="text-sm text-gray-600 dark:text-gray-400">
-                  Upcoming in 48 hours
-                </div>
-                {events.event_count > 0 && (
-                  <div className="text-sm text-purple-600 dark:text-purple-400">
-                    Expected attendance: {events.total_expected_attendance?.toLocaleString() || 'N/A'}
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="text-gray-500">Loading events data...</div>
-            )}
-          </motion.div>
-
-          {/* Transit */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.2 }}
-            className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6"
-          >
-            <div className="flex items-center gap-3 mb-4">
-              <Train className="w-6 h-6 text-orange-500" />
-              <h3 className="font-semibold text-gray-900 dark:text-white">Transit</h3>
-            </div>
-            {externalFeatures ? (
-              <div className="space-y-2">
-                <div className="text-3xl font-bold text-gray-900 dark:text-white">
-                  {((externalFeatures.features?.transit?.disruption_score || 0) * 100).toFixed(0)}%
-                </div>
-                <div className="text-sm text-gray-600 dark:text-gray-400">
-                  Disruption level
-                </div>
-                {(externalFeatures.features?.transit?.disruption_score || 0) > 0.5 && (
-                  <div className="text-sm text-orange-600 dark:text-orange-400">
-                    High disruption - More taxi demand
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="text-gray-500">Loading transit data...</div>
-            )}
-          </motion.div>
-
-          {/* Airports */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.3 }}
-            className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6"
-          >
-            <div className="flex items-center gap-3 mb-4">
-              <Plane className="w-6 h-6 text-sky-500" />
-              <h3 className="font-semibold text-gray-900 dark:text-white">Airports</h3>
-            </div>
-            {externalFeatures ? (
-              <div className="space-y-2">
-                <div className="text-sm text-gray-600 dark:text-gray-400">
-                  JFK: {((externalFeatures.features?.airports?.jfk_traffic || 0) * 100).toFixed(0)}%
-                </div>
-                <div className="text-sm text-gray-600 dark:text-gray-400">
-                  LGA: {((externalFeatures.features?.airports?.lga_traffic || 0) * 100).toFixed(0)}%
-                </div>
-                <div className="text-sm text-gray-600 dark:text-gray-400">
-                  EWR: {((externalFeatures.features?.airports?.ewr_traffic || 0) * 100).toFixed(0)}%
-                </div>
-              </div>
-            ) : (
-              <div className="text-gray-500">Loading airport data...</div>
-            )}
-          </motion.div>
-        </div>
-
-        {/* Error Message */}
-        {error && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-2xl p-6"
-          >
-            <div className="flex items-center gap-3">
-              <AlertCircle className="w-6 h-6 text-yellow-600 dark:text-yellow-400" />
-              <div>
-                <h3 className="font-semibold text-yellow-900 dark:text-yellow-200">Notice</h3>
-                <p className="text-yellow-800 dark:text-yellow-300">{error}</p>
-              </div>
-            </div>
-          </motion.div>
-        )}
-
-        {/* Forecast Chart */}
-        {forecast && forecast.predictions && forecast.predictions.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8"
-          >
-            <div className="flex items-center gap-3 mb-6">
-              <BarChart3 className="w-6 h-6 text-blue-500" />
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-                24-Hour Enhanced Forecast
-              </h2>
-            </div>
-
-            {loading ? (
-              <div className="flex items-center justify-center h-64">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {forecast.predictions.slice(0, 12).map((item, index) => (
-                  <div
-                    key={index}
-                    className="flex items-center gap-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-xl"
+          <div className="flex flex-wrap items-end gap-4">
+            <div>
+              <label className={`block text-[10px] font-black uppercase tracking-[0.2em] mb-2 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                Horizon
+              </label>
+              <div className={`inline-flex rounded-2xl p-1 border ${isDark ? 'border-white/[0.08] bg-black/40' : 'border-slate-200 bg-white'}`}>
+                {[
+                  { k: 'hourly', label: '24 Hours' },
+                  { k: 'daily', label: '7 Days' },
+                ].map((h) => (
+                  <button
+                    key={h.k}
+                    onClick={() => setHorizon(h.k)}
+                    className={`px-4 py-2 rounded-xl text-[11.5px] font-black uppercase tracking-wider transition-all ${
+                      horizon === h.k
+                        ? 'bg-gradient-to-br from-orange-500 to-rose-500 text-white shadow-lg'
+                        : (isDark ? 'text-slate-400 hover:text-white' : 'text-slate-500 hover:text-slate-900')
+                    }`}
                   >
-                    <div className="flex items-center gap-2 w-48">
-                      <Clock className="w-4 h-4 text-gray-500" />
-                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                        {new Date(item.timestamp).toLocaleTimeString('en-US', {
-                          hour: '2-digit',
-                          minute: '2-digit'
-                        })}
-                      </span>
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-4">
-                        <div className="text-2xl font-bold text-gray-900 dark:text-white">
-                          {item.predicted_demand?.toFixed(0) || 0}
-                        </div>
-                        <div className="text-sm text-gray-600 dark:text-gray-400">
-                          trips/hour
-                        </div>
-                        <div className="flex-1 bg-gray-200 dark:bg-gray-600 rounded-full h-2">
-                          <div
-                            className="bg-gradient-to-r from-blue-500 to-purple-600 h-2 rounded-full"
-                            style={{
-                              width: `${Math.min((item.predicted_demand / 100) * 100, 100)}%`
-                            }}
-                          ></div>
-                        </div>
-                      </div>
-                      {item.confidence_interval && (
-                        <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                          Range: {item.confidence_interval.lower?.toFixed(0)} - {item.confidence_interval.upper?.toFixed(0)}
-                        </div>
-                      )}
-                    </div>
-                  </div>
+                    {h.label}
+                  </button>
                 ))}
               </div>
-            )}
-          </motion.div>
-        )}
-
-        {/* Explanation */}
-        {forecast && forecast.explanation && forecast.explanation.explanations && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8"
-          >
-            <div className="flex items-center gap-3 mb-6">
-              <AlertCircle className="w-6 h-6 text-amber-500" />
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-                Forecast Factors
-              </h2>
             </div>
 
-            <div className="space-y-4">
-              {forecast.explanation.explanations.map((exp, index) => (
-                <div
-                  key={index}
-                  className="flex items-start gap-4 p-4 bg-amber-50 dark:bg-amber-900/20 rounded-xl border border-amber-200 dark:border-amber-800"
-                >
-                  <div className={`p-2 rounded-lg ${
-                    exp.impact === 'high' || exp.impact === 'very_high'
-                      ? 'bg-red-100 dark:bg-red-900/30'
-                      : 'bg-yellow-100 dark:bg-yellow-900/30'
-                  }`}>
-                    <AlertCircle className={`w-5 h-5 ${
-                      exp.impact === 'high' || exp.impact === 'very_high'
-                        ? 'text-red-600 dark:text-red-400'
-                        : 'text-yellow-600 dark:text-yellow-400'
-                    }`} />
-                  </div>
-                  <div className="flex-1">
-                    <div className="font-semibold text-gray-900 dark:text-white mb-1">
-                      {exp.factor}
-                    </div>
-                    <div className="text-sm text-gray-600 dark:text-gray-400">
-                      {exp.description}
-                    </div>
-                  </div>
-                  <div className="px-3 py-1 bg-white dark:bg-gray-700 rounded-full text-xs font-medium text-gray-700 dark:text-gray-300">
-                    {exp.impact}
-                  </div>
+            <div className="relative min-w-[260px]">
+              <label className={`block text-[10px] font-black uppercase tracking-[0.2em] mb-2 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                Target Zone
+              </label>
+              <button
+                onClick={() => setZoneDropdownOpen((o) => !o)}
+                className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl border transition-all ${
+                  isDark
+                    ? 'bg-[#0a0a0a] border-white/[0.08] hover:border-orange-500/30 text-white'
+                    : 'bg-white border-slate-200 hover:border-orange-500/30 text-slate-900'
+                }`}
+              >
+                <span className="flex items-center gap-3 text-left">
+                  <Star size={15} className="text-orange-500 shrink-0" />
+                  <span>
+                    <span className="block text-[13px] font-black truncate max-w-[170px]">
+                      {selectedZoneObj?.zone_name || 'Select zone…'}
+                    </span>
+                    <span className={`block text-[10px] font-bold uppercase tracking-wider ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                      {selectedZoneObj?.borough || '—'} · #{selectedZone || '?'}
+                    </span>
+                  </span>
+                </span>
+                <ChevronDown size={18} className={`transition-transform ${zoneDropdownOpen ? 'rotate-180' : ''} ${isDark ? 'text-slate-400' : 'text-slate-500'}`} />
+              </button>
+              {zoneDropdownOpen && (
+                <div className={`absolute z-40 mt-2 w-full max-h-[280px] overflow-y-auto rounded-2xl border shadow-2xl ${
+                  isDark ? 'bg-[#0a0a0a] border-white/[0.08]' : 'bg-white border-slate-200'
+                }`}>
+                  {zones.map((z) => (
+                    <button
+                      key={z.location_id}
+                      onClick={() => {
+                        setSelectedZone(z.location_id.toString());
+                        setZoneDropdownOpen(false);
+                      }}
+                      className={`w-full text-left px-4 py-2.5 text-[12.5px] font-semibold transition-colors ${
+                        selectedZone === z.location_id.toString()
+                          ? 'bg-orange-500/10 text-orange-500'
+                          : (isDark ? 'text-slate-300 hover:bg-white/[0.03]' : 'text-slate-700 hover:bg-slate-50')
+                      }`}
+                    >
+                      <span className="font-black">#{z.location_id}</span> · {z.zone_name}
+                      <span className={`ml-1 text-[10px] font-bold uppercase tracking-wider ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                        {z.borough}
+                      </span>
+                    </button>
+                  ))}
                 </div>
-              ))}
+              )}
             </div>
+          </div>
+        </div>
+
+        {/* Model selector chips */}
+        <div className="mt-6 flex flex-wrap items-center gap-2">
+          <span className={`flex items-center gap-1.5 mr-2 text-[10.5px] font-black uppercase tracking-[0.22em] ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+            <Sliders size={13} /> View Model
+          </span>
+          {MODEL_CHIPS.map((c) => {
+            const has = (forecast?.meta?.model_contributions || []).some(([k]) => k === c.key)
+              || (forecast?.meta?.per_model_breakdown && Object.hasOwn(forecast.meta.per_model_breakdown, c.key))
+              || c.key === 'ensemble';
+            const on = activeModel === c.key;
+            return (
+              <button
+                key={c.key}
+                onClick={() => has && setActiveModel(c.key)}
+                disabled={!has}
+                className={`px-3 py-1.5 rounded-xl text-[11px] font-black uppercase tracking-wider border transition-all ${
+                  !has
+                    ? (isDark ? 'border-white/[0.05] text-slate-600 cursor-not-allowed bg-white/[0.02]' : 'border-slate-100 text-slate-300 cursor-not-allowed bg-slate-50')
+                    : on
+                      ? 'text-white border-transparent shadow-lg'
+                      : (isDark ? 'border-white/[0.10] text-slate-400 hover:text-white' : 'border-slate-200 text-slate-500 hover:text-slate-900')
+                }`}
+                style={on ? { background: `linear-gradient(135deg, ${c.color}dd, ${c.color})` } : undefined}
+              >
+                {c.label}
+              </button>
+            );
+          })}
+        </div>
+      </motion.div>
+
+      {/* KPI STRIP */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-5">
+        {[
+          {
+            icon: <Gauge size={17} style={{ color: '#fff' }} />,
+            eyebrow: 'Accuracy',
+            title: 'Estimated',
+            value: `${estAcc.toFixed(1)}%`,
+            sub: `Confidence band: ${estBand}`,
+            color: 'from-emerald-500/30 to-cyan-500/15 border-emerald-500/30',
+          },
+          {
+            icon: <Sparkles size={17} style={{ color: '#fff' }} />,
+            eyebrow: 'Engine',
+            title: 'Active model',
+            value: meta.model_name || '—',
+            sub: (meta.features_used || []).filter(Boolean).join(' · ') || 'features pending',
+            color: 'from-violet-500/25 to-blue-500/15 border-violet-500/30',
+            valSize: 'text-[15px]',
+          },
+          {
+            icon: <Target size={17} style={{ color: '#fff' }} />,
+            eyebrow: 'Peak Demand',
+            title: horizon === 'hourly' ? 'Peak hour' : 'Peak day',
+            value: peak ? Math.round(peak.value || peak.predicted_demand || 0).toLocaleString() : '—',
+            sub: peak?.timestamp ? new Date(peak.timestamp).toLocaleString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit' }) : 'pending',
+            color: 'from-orange-500/28 to-rose-500/15 border-orange-500/30',
+          },
+          {
+            icon: <BarChart3 size={17} style={{ color: '#fff' }} />,
+            eyebrow: 'Average',
+            title: horizon === 'hourly' ? 'Trips / hour' : 'Trips / day',
+            value: Math.round(avgDemand).toLocaleString(),
+            sub: `${(forecast?.predicted || []).length} ${horizon} windows forecasted`,
+            color: 'from-sky-500/25 to-blue-500/15 border-sky-500/30',
+          },
+        ].map((k, i) => (
+          <motion.div
+            key={i}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.02 * i }}
+            className={`rounded-3xl border p-5 shadow-2xl backdrop-blur-3xl bg-gradient-to-br ${k.color}`}
+          >
+            <div className="flex items-center justify-between mb-3">
+              <span className={`text-[10px] font-black uppercase tracking-[0.22em] ${isDark ? 'text-white/60' : 'text-slate-500'}`}>{k.eyebrow}</span>
+              <span className="p-1.5 rounded-xl bg-white/10 backdrop-blur">{k.icon}</span>
+            </div>
+            <p className={`text-[11px] font-semibold ${isDark ? 'text-white/60' : 'text-slate-500'}`}>{k.title}</p>
+            <div className={`mt-2 font-black tracking-tight ${k.valSize || 'text-2xl'} ${isDark ? 'text-white' : 'text-slate-900'} truncate`}>
+              {k.value}
+            </div>
+            <p className={`mt-2 text-[11.5px] leading-5 truncate ${isDark ? 'text-white/55' : 'text-slate-500'}`}>{k.sub}</p>
           </motion.div>
-        )}
+        ))}
+      </div>
+
+      {error && (
+        <div className="rounded-2xl border border-amber-500/25 bg-amber-500/10 p-5 flex items-start gap-3">
+          <AlertCircle size={20} className="text-amber-500 shrink-0 mt-0.5" />
+          <div>
+            <p className={`text-[13px] font-bold ${isDark ? 'text-amber-200' : 'text-amber-900'}`}>Notice</p>
+            <p className={`text-[12px] mt-0.5 ${isDark ? 'text-amber-300/80' : 'text-amber-800'}`}>{error}</p>
+          </div>
+        </div>
+      )}
+
+      {/* FORECAST CHART */}
+      {(loading || forecast) && (
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          className={`rounded-3xl border p-6 md:p-7 shadow-2xl backdrop-blur-3xl ${
+            isDark ? 'border-white/[0.08] bg-[#0a0a0a]/80' : 'border-slate-200 bg-white'
+          }`}
+        >
+          <div className="flex items-start justify-between mb-5 gap-4 flex-wrap">
+            <div>
+              <div className="flex items-center gap-2 mb-1.5">
+                <TrendingUp size={17} className="text-orange-500" />
+                <span className={`text-[11px] font-black uppercase tracking-[0.22em] ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                  Demand Curve
+                </span>
+              </div>
+              <h2 className={`text-lg md:text-xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                {horizon === 'hourly' ? '24-Hour' : '7-Day'} Forecast with Confidence Band
+              </h2>
+              <p className={`mt-1 text-[12px] ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                Hover the chart to inspect per-timestamp values, surge multipliers, and projected revenue.
+              </p>
+            </div>
+            <div className="flex items-center gap-2 text-[10.5px] font-black uppercase tracking-wider">
+              <span className={`px-3 py-1.5 rounded-xl border ${isDark ? 'border-white/[0.08]' : 'border-slate-200'} ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                <span className="inline-block w-2.5 h-2.5 rounded-full mr-2 align-middle" style={{ background: isDark ? '#fb923c' : '#f97316' }} />
+                Historical
+              </span>
+              {(forecast?.meta?.weights || meta.weights) && (
+                <span className="px-3 py-1.5 rounded-xl bg-gradient-to-br from-rose-500/90 to-orange-500/90 text-white shadow">
+                  Weights · {Object.entries(meta.weights || {}).length} models
+                </span>
+              )}
+            </div>
+          </div>
+
+          {loading ? (
+            <div className="flex items-center justify-center h-80">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500" />
+            </div>
+          ) : (
+            <>
+              <ForecastSvgChart
+                historical={forecast?.historical || []}
+                predicted={forecast?.predicted || []}
+                perModelBreakdown={forecast?.per_model_breakdown || {}}
+                activeModelKey={activeModel}
+                isDark={isDark}
+                height={340}
+              />
+              {(meta.model_contributions?.length || 0) > 0 && (
+                <div className={`mt-6 pt-5 border-t grid grid-cols-2 md:grid-cols-4 gap-3 ${isDark ? 'border-white/[0.06]' : 'border-slate-100'}`}>
+                  {meta.model_contributions.slice(0, 4).map(([k, w], i) => {
+                    const chip = MODEL_CHIPS.find((c) => c.key === k);
+                    if (!chip) return null;
+                    return (
+                      <div key={k} className="flex items-center gap-3">
+                        <div className="relative w-10 h-10 shrink-0">
+                          <svg viewBox="0 0 40 40" className="w-full h-full -rotate-90">
+                            <circle cx="20" cy="20" r="15" fill="none" stroke={isDark ? 'rgba(255,255,255,0.06)' : 'rgba(15,23,42,0.06)'} strokeWidth="5" />
+                            <circle
+                              cx="20" cy="20" r="15"
+                              fill="none" stroke={chip.color} strokeWidth="5"
+                              strokeDasharray={`${w * 94.2} 94.2`}
+                              strokeLinecap="round"
+                            />
+                          </svg>
+                        </div>
+                        <div className="min-w-0">
+                          <div className={`text-[11px] font-black uppercase tracking-wider ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>{chip.label}</div>
+                          <div className="text-[14px] font-black tabular-nums" style={{ color: chip.color }}>
+                            {(w * 100).toFixed(1)}%
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </>
+          )}
+        </motion.div>
+      )}
+
+      {/* EXTERNAL CONTEXT */}
+      <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-5">
+        {[
+          {
+            icon: <CloudRain size={19} className="text-sky-500" />,
+            title: 'Weather',
+            value: weather ? `${weather.temperature?.toFixed(0) ?? '—'}°F` : '—',
+            sub: weather
+              ? `${weather.weather || 'Clear'} · Hum ${weather.humidity || 0}%${weather.rain ? ' · Rain' : ''}`
+              : 'Loading weather data…',
+            badge: weather?.rain > 0 ? { text: 'Rain · demand +', color: 'bg-sky-500/15 text-sky-500 border-sky-500/20' } : null,
+          },
+          {
+            icon: <Music size={19} className="text-violet-500" />,
+            title: 'Events',
+            value: `${events?.event_count || 0}`,
+            sub: events
+              ? `Next 48h · ${(events.total_expected_attendance || 0).toLocaleString()} attendees`
+              : 'Loading events…',
+            badge: (events?.event_count || 0) > 0 ? { text: `${events.event_count} upcoming`, color: 'bg-violet-500/15 text-violet-500 border-violet-500/20' } : null,
+          },
+          {
+            icon: <Train size={19} className="text-orange-500" />,
+            title: 'Transit',
+            value: `${Math.round(((externalFeatures?.features?.transit?.disruption_score || 0) * 100))}%`,
+            sub: (externalFeatures?.features?.transit?.disruption_score || 0) > 0.5 ? 'High disruption — expect more rides' : 'Normal subway operation',
+            badge: (externalFeatures?.features?.transit?.disruption_score || 0) > 0.5 ? { text: 'Disruption surge', color: 'bg-orange-500/15 text-orange-500 border-orange-500/20' } : null,
+          },
+          {
+            icon: <Plane size={19} className="text-emerald-500" />,
+            title: 'Airports',
+            value: 'JFK · LGA · EWR',
+            sub: `JFK ${Math.round(((externalFeatures?.features?.airports?.jfk_traffic || 0) * 100))}% · LGA ${Math.round(((externalFeatures?.features?.airports?.lga_traffic || 0) * 100))}% · EWR ${Math.round(((externalFeatures?.features?.airports?.ewr_traffic || 0) * 100))}%`,
+            badge: Math.round(((externalFeatures?.features?.airports?.jfk_traffic || 0) * 100)) > 70 ? { text: 'Peak air traffic', color: 'bg-emerald-500/15 text-emerald-500 border-emerald-500/20' } : null,
+          },
+        ].map((c, i) => (
+          <motion.div
+            key={i}
+            initial={{ opacity: 0, scale: 0.97 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.03 * i }}
+            className={`relative rounded-3xl border p-5 shadow-xl backdrop-blur-3xl overflow-hidden ${
+              isDark ? 'border-white/[0.08] bg-gradient-to-br from-[#121212]/90 via-[#0b0b0b]/90 to-[#050505]/90' : 'border-slate-200 bg-gradient-to-br from-white via-slate-50/60 to-white'
+            }`}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <div className={`p-2.5 rounded-xl ${c.icon.props.className?.includes('sky') ? 'bg-sky-500/10' : c.icon.props.className?.includes('violet') ? 'bg-violet-500/10' : c.icon.props.className?.includes('orange') ? 'bg-orange-500/10' : 'bg-emerald-500/10'}`}>
+                {c.icon}
+              </div>
+              {c.badge && (
+                <span className={`px-2.5 py-1 rounded-lg text-[9.5px] font-black uppercase tracking-wider border ${c.badge.color}`}>
+                  {c.badge.text}
+                </span>
+              )}
+            </div>
+            <p className={`text-[10.5px] font-black uppercase tracking-[0.2em] ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>{c.title}</p>
+            <div className={`mt-1.5 text-2xl font-black tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>{c.value}</div>
+            <p className={`mt-2 text-[11.5px] leading-5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{c.sub}</p>
+          </motion.div>
+        ))}
+      </div>
+
+      {/* BOTTOM GRID: Accuracy improvement + Feature importance */}
+      <div className="grid lg:grid-cols-5 gap-5">
+        {/* Accuracy improvement */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className={`lg:col-span-2 rounded-3xl border p-6 shadow-2xl backdrop-blur-3xl ${
+            isDark ? 'border-white/[0.08] bg-[#0a0a0a]/80' : 'border-slate-200 bg-white'
+          }`}
+        >
+          <div className="flex items-center gap-2 mb-1.5">
+            <CheckCircle size={17} className="text-emerald-500" />
+            <span className={`text-[11px] font-black uppercase tracking-[0.22em] ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+              Accuracy Delta
+            </span>
+          </div>
+          <h2 className={`text-lg md:text-xl font-black mb-5 ${isDark ? 'text-white' : 'text-slate-900'}`}>
+            Ensemble vs Baseline
+          </h2>
+          {comparison ? (
+            <div className="space-y-3.5">
+              {Object.entries(comparison.improvement_over_baseline_sarimax || {})
+                .sort((a, b) => b[1] - a[1])
+                .map(([k, v]) => {
+                  const chip = MODEL_CHIPS.find((c) => c.key === k);
+                  if (!chip) return null;
+                  const pct = Math.max(0, Math.min(100, v));
+                  const positive = v >= 0;
+                  return (
+                    <div key={k}>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="flex items-center gap-2">
+                          <span className="w-2.5 h-2.5 rounded-full" style={{ background: chip.color }} />
+                          <span className={`text-[12px] font-bold uppercase tracking-wide ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>{chip.label}</span>
+                          {comparison.selected_model === k && (
+                            <span className="px-1.5 py-0.5 rounded-md text-[9px] font-black uppercase bg-orange-500/15 text-orange-500 border border-orange-500/20">
+                              WINNER
+                            </span>
+                          )}
+                        </span>
+                        <span className={`text-[12px] font-black tabular-nums ${positive ? (isDark ? 'text-emerald-400' : 'text-emerald-700') : (isDark ? 'text-rose-400' : 'text-rose-700')}`}>
+                          {positive ? '+' : ''}{v.toFixed(1)}%
+                        </span>
+                      </div>
+                      <div className={`h-2.5 rounded-full overflow-hidden ${isDark ? 'bg-white/[0.05]' : 'bg-slate-100'}`}>
+                        <motion.div
+                          initial={{ width: 0 }}
+                          animate={{ width: `${positive ? pct : 0}%` }}
+                          transition={{ duration: 0.8, ease: 'easeOut' }}
+                          className="h-full rounded-full"
+                          style={{
+                            background: positive
+                              ? `linear-gradient(90deg, ${chip.color}cc, ${chip.color})`
+                              : (isDark ? 'rgba(244,63,94,0.6)' : 'rgba(244,63,94,0.7)'),
+                          }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              <div className={`mt-5 pt-4 border-t flex items-start gap-3 rounded-xl p-4 ${isDark ? 'border-white/[0.06] bg-emerald-500/5' : 'border-emerald-100 bg-emerald-50/50'}`}>
+                <Info size={17} className={`mt-0.5 shrink-0 ${isDark ? 'text-emerald-400' : 'text-emerald-700'}`} />
+                <p className={`text-[12px] leading-6 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
+                  <span className={`font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>Recommendation — </span>
+                  {comparison.recommendation || `Use ${comparison.selected_model || 'Ensemble'} for this zone.`}
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className={`text-[12px] ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+              Waiting for comparison snapshot…
+            </div>
+          )}
+        </motion.div>
+
+        {/* Feature importance */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.05 }}
+          className={`lg:col-span-3 rounded-3xl border p-6 shadow-2xl backdrop-blur-3xl ${
+            isDark ? 'border-white/[0.08] bg-[#0a0a0a]/80' : 'border-slate-200 bg-white'
+          }`}
+        >
+          <div className="flex items-center gap-2 mb-1.5">
+            <Layers size={17} className="text-amber-500" />
+            <span className={`text-[11px] font-black uppercase tracking-[0.22em] ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+              Feature Drivers
+            </span>
+          </div>
+          <h2 className={`text-lg md:text-xl font-black mb-5 ${isDark ? 'text-white' : 'text-slate-900'}`}>
+            Why Did the Model Predict This?
+          </h2>
+          {importanceEntries.length > 0 ? (
+            <div className="grid md:grid-cols-2 gap-6">
+              <div className="space-y-3.5">
+                {importanceEntries.map(([k, v]) => {
+                  const pct = (v / maxImp) * 100;
+                  const label = k.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+                  return (
+                    <div key={k}>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className={`text-[12px] font-bold uppercase tracking-wide ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
+                          {label}
+                        </span>
+                        <span className={`text-[12px] font-black tabular-nums ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                          {v.toFixed(1)}%
+                        </span>
+                      </div>
+                      <div className={`h-3 rounded-full overflow-hidden ${isDark ? 'bg-white/[0.05]' : 'bg-slate-100'}`}>
+                        <motion.div
+                          initial={{ width: 0 }}
+                          animate={{ width: `${pct}%` }}
+                          transition={{ duration: 0.8, ease: 'easeOut' }}
+                          className="h-full rounded-full"
+                          style={{ background: 'linear-gradient(90deg, rgba(249,115,22,0.95), rgba(244,63,94,0.95))' }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              <div className={`rounded-2xl border p-5 ${isDark ? 'border-white/[0.06] bg-gradient-to-br from-[#0e0e0e] to-[#070707]' : 'border-slate-100 bg-gradient-to-br from-slate-50 to-white'}`}>
+                <div className="flex items-center gap-2 mb-4">
+                  <Sparkles size={15} className="text-amber-500" />
+                  <span className={`text-[11px] font-black uppercase tracking-[0.2em] ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                    Top Individual Features
+                  </span>
+                </div>
+                <div className="space-y-2.5">
+                  {(importance.top_features || []).slice(0, 10).map((f, i) => (
+                    <div key={i} className="flex items-center gap-3">
+                      <span className={`w-6 h-6 rounded-lg flex items-center justify-center text-[10px] font-black shrink-0 ${
+                        i === 0 ? 'bg-orange-500/15 text-orange-500 border border-orange-500/20'
+                          : (isDark ? 'bg-white/[0.04] text-slate-400' : 'bg-slate-100 text-slate-500')
+                      }`}>
+                        {i + 1}
+                      </span>
+                      <span className={`flex-1 text-[12px] font-semibold truncate ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
+                        {f.feature}
+                      </span>
+                      <span className={`text-[12px] font-black tabular-nums ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                        {f.importance_pct.toFixed(1)}%
+                      </span>
+                    </div>
+                  ))}
+                  {(importance.top_features || []).length === 0 && (
+                    <div className={`text-[11.5px] ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                      Top features pending retraining — check back shortly.
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className={`rounded-2xl border p-5 text-[12px] leading-6 ${isDark ? 'border-white/[0.06] text-slate-400' : 'border-slate-100 text-slate-500'}`}>
+              Feature importance requires LightGBM. Install <code className={`px-1.5 py-0.5 rounded-lg ${isDark ? 'bg-white/[0.05]' : 'bg-slate-100'}`}>lightgbm&gt;=4.0.0</code> and
+              retrain — the model will automatically explain which features (hour-of-day, weekend, rain, lags, etc.) drive each prediction.
+            </div>
+          )}
+        </motion.div>
       </div>
     </div>
   );
