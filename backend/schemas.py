@@ -65,9 +65,15 @@ class ForecastResponse(BaseModel):
     requested_window: Optional[Dict[str, Any]]
     peak_demand: Optional[Dict[str, Any]]
     average_demand: Optional[float]
+    peak_window: Optional[Dict[str, Any]] = None
+    per_model_breakdown: Optional[Dict[str, Any]] = None
+    forecast: Optional[list] = None
+    error: Optional[str] = None
 
-    class Config:
-        from_attributes = True
+    model_config = {
+        "from_attributes": True,
+        "extra": "allow",
+    }
 
 # --- Recommendation Schemas ---
 class RecommendationItem(BaseModel):
