@@ -1,23 +1,22 @@
+import { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './hooks/useAuth';
 import { ThemeProvider } from './context/ThemeContext';
-import Login from './pages/Login';
-import Register from './pages/Register';
-import Layout from './components/Layout';
-import Dashboard from './pages/Dashboard';
-import DemandForecast from './pages/DemandForecast';
-import EnhancedForecast from './pages/EnhancedForecast';
-import ModelComparison from './pages/ModelComparison';
-import ZoneManagement from './pages/ZoneManagement';
-import SettingsPage from './pages/Settings';
-import OperatorSupport from './pages/OperatorSupport';
-
-import Landing from './pages/Landing';
-import Privacy from './pages/Privacy';
-import Docs from './pages/Docs';
-import About from './pages/About';
-import ProfilePage from './pages/Profile';
-
+const Login = lazy(() => import('./pages/Login'));
+const Register = lazy(() => import('./pages/Register'));
+const Layout = lazy(() => import('./components/Layout'));
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const DemandForecast = lazy(() => import('./pages/DemandForecast'));
+const EnhancedForecast = lazy(() => import('./pages/EnhancedForecast'));
+const ModelComparison = lazy(() => import('./pages/ModelComparison'));
+const ZoneManagement = lazy(() => import('./pages/ZoneManagement'));
+const SettingsPage = lazy(() => import('./pages/Settings'));
+const OperatorSupport = lazy(() => import('./pages/OperatorSupport'));
+const Landing = lazy(() => import('./pages/Landing'));
+const Privacy = lazy(() => import('./pages/Privacy'));
+const Docs = lazy(() => import('./pages/Docs'));
+const About = lazy(() => import('./pages/About'));
+const ProfilePage = lazy(() => import('./pages/Profile'));
 function ProtectedRoute({ children, requireOperator }) {
   const { user } = useAuth();
   if (!user) return <Navigate to="/login" replace />;
@@ -33,7 +32,8 @@ export default function App() {
   return (
     <ThemeProvider>
       <BrowserRouter>
-        <Routes>
+        <Suspense fallback={null}>
+          <Routes>
           {/* SECTION 1: STANDALONE PUBLIC/GLOBAL ROUTES (NO SIDEBAR) */}
           <Route path="/" element={<Landing />} />
           <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
@@ -56,7 +56,8 @@ export default function App() {
 
           {/* CATCH ALL */}
           <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
+          </Routes>
+        </Suspense>
       </BrowserRouter>
     </ThemeProvider>
   );

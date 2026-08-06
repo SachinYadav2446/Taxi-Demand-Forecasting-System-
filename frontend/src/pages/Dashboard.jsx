@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import { useOutletContext, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useTheme } from '../context/ThemeContext';
@@ -7,7 +7,7 @@ import { Building2, Mail, MapPin, ShieldCheck, UserRound, Users, Settings2, X, L
 import FleetAllocation from '../components/FleetAllocation';
 import SmartDispatch from '../components/SmartDispatch';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import ZoneMap from '../components/ZoneMap';
+const ZoneMap = lazy(() => import('../components/ZoneMap'));
 import { motion } from 'framer-motion';
 
 function EditProfileModal({ user, onClose }) {
@@ -425,7 +425,9 @@ export default function Dashboard() {
                 </div>
               </div>
             </div>
-            <ZoneMap />
+            <Suspense fallback={<div className="py-16 text-center text-sm text-slate-400">Loading map...</div>}>
+              <ZoneMap />
+            </Suspense>
           </section>
 
           {/* Trends Section */}
