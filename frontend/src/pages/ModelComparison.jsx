@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { api } from '../lib/axios';
 import { useAuth } from '../hooks/useAuth';
@@ -6,7 +6,7 @@ import { useTheme } from '../context/ThemeContext';
 import {
   TrendingUp, Award, BarChart3, PieChart, Target,
   Zap, Clock, ChevronDown, Star, Shield, CheckCircle2,
-  AlertCircle, Gauge, Layers
+  AlertCircle, Gauge, Layers, Search, X, CheckCircle, Trophy
 } from 'lucide-react';
 
 const MODEL_DISPLAY = {
@@ -284,38 +284,86 @@ export default function ModelComparison() {
   const isDark = mode !== 'light';
 
   const [zones, setZones] = useState([]);
+  const [groupedZones, setGroupedZones] = useState({});
   const [selectedZone, setSelectedZone] = useState('');
   const [zoneDropdownOpen, setZoneDropdownOpen] = useState(false);
+  const [zoneSearch, setZoneSearch] = useState('');
+  const zoneDropdownRef = useRef(null);
   const [comparison, setComparison] = useState(null);
   const [importance, setImportance] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [toggleModels, setToggleModels] = useState(['ensemble', 'lightgbm']);
+  const [zonesLoading, setZonesLoading] = useState(false);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (zoneDropdownRef.current && !zoneDropdownRef.current.contains(event.target)) {
+        setZoneDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   useEffect(() => {
     const fetchZones = async () => {
+      setZonesLoading(true);
       try {
         const endpoint = user?.role === 'operator' ? '/zones/company' : '/zones/';
         const res = await api.get(endpoint);
         let availableZones = [];
         if (user?.role === 'operator') {
           availableZones = res.data;
+          const boroughGroups = {};
+          res.data.forEach((z) => {
+            const b = z.borough || 'Unknown';
+            if (!boroughGroups[b]) boroughGroups[b] = [];
+            boroughGroups[b].push(z);
+          });
+          setGroupedZones(boroughGroups);
         } else {
-          Object.values(res.data).forEach((arr) => {
+          Object.entries(res.data).forEach(([borough, arr]) => {
             availableZones = [...availableZones, ...arr];
+            setGroupedZones(res.data);
           });
         }
         setZones(availableZones);
         if (availableZones.length) {
-          setSelectedZone(availableZones[0].location_id.toString());
+          setSelectedZone((cur) => {
+            const exists = availableZones.some((z) => z.location_id.toString() === cur);
+            return exists ? cur : availableZones[0].location_id.toString();
+          });
         }
       } catch (err) {
         console.error(err);
         setZones([]);
+        setGroupedZones({});
+      } finally {
+        setZonesLoading(false);
       }
     };
     fetchZones();
   }, [user]);
+
+  const filteredGroupedZones = useMemo(() => {
+    const q = zoneSearch.trim().toLowerCase();
+    if (!q) return groupedZones;
+    const result = {};
+    Object.entries(groupedZones).forEach(([borough, arr]) => {
+      const filtered = (arr || []).filter((z) =>
+        (z.zone_name || '').toLowerCase().includes(q) ||
+        (z.borough || '').toLowerCase().includes(q) ||
+        String(z.location_id).includes(q)
+      );
+      if (filtered.length) result[borough] = filtered;
+    });
+    return result;
+  }, [groupedZones, zoneSearch]);
+
+  const totalFilteredZones = useMemo(() => {
+    return Object.values(filteredGroupedZones).reduce((sum, arr) => sum + (arr?.length || 0), 0);
+  }, [filteredGroupedZones]);
 
   useEffect(() => {
     if (!selectedZone) return;
@@ -378,16 +426,16 @@ export default function ModelComparison() {
       <motion.div
         initial={{ opacity: 0, y: -12 }}
         animate={{ opacity: 1, y: 0 }}
-        className={`rounded-3xl border p-6 md:p-8 shadow-2xl backdrop-blur-3xl bg-gradient-to-br ${
+        className={`relative z-10 rounded-3xl border p-6 md:p-8 shadow-2xl backdrop-blur-2xl ${
           isDark
-            ? 'border-orange-500/20 from-orange-950/25 via-[#121212]/95 to-[#050505]/95'
-            : 'border-orange-500/20 from-orange-50/90 via-white to-orange-50/40'
+            ? 'border-white/[0.08] bg-gradient-to-br from-[#1a1a1a]/80 to-[#0a0a0a]/80'
+            : 'border-slate-200 bg-gradient-to-br from-white via-slate-50/60 to-white'
         }`}
       >
         <div className="flex items-start justify-between gap-6 flex-wrap">
           <div className="flex items-center gap-4">
-            <div className="p-3.5 rounded-2xl bg-gradient-to-br from-orange-500 to-rose-500 shadow-[0_0_30px_rgba(249,115,22,0.35)]">
-              <Layers size={24} className="text-black" />
+            <div className={`p-3.5 rounded-2xl ${isDark ? 'bg-orange-500/10 text-orange-500 border border-orange-500/20' : 'bg-orange-50 text-orange-600 border border-orange-200'}`}>
+              <Layers size={24} />
             </div>
             <div>
               <div className="flex items-center gap-2 mb-1.5">
@@ -404,7 +452,7 @@ export default function ModelComparison() {
             </div>
           </div>
 
-          <div className="relative min-w-[280px]">
+          <div className="relative min-w-[320px]" ref={zoneDropdownRef}>
             <label className={`block text-[10px] font-black uppercase tracking-[0.2em] mb-2 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
               Target Zone
             </label>
@@ -414,46 +462,109 @@ export default function ModelComparison() {
                 isDark
                   ? 'bg-[#0a0a0a] border-white/[0.08] hover:border-orange-500/30 text-white'
                   : 'bg-white border-slate-200 hover:border-orange-500/30 text-slate-900'
-              }`}
+              } ${zonesLoading ? 'opacity-60 cursor-wait' : ''}`}
+              disabled={zonesLoading}
             >
               <span className="flex items-center gap-3 text-left">
-                <span className="p-1.5 rounded-lg bg-orange-500/10 text-orange-500">
-                  <Award size={16} />
+                <span className="p-1.5 rounded-lg bg-orange-500/10 text-orange-500 shrink-0">
+                  <Trophy size={16} />
                 </span>
                 <span>
-                  <span className="block text-[13px] font-black truncate max-w-[180px]">
-                    {selectedZoneObj?.zone_name || 'Select zone…'}
+                  <span className="block text-[13px] font-black truncate max-w-[200px]">
+                    {zonesLoading ? 'Loading zones…' : (selectedZoneObj?.zone_name || 'Select zone…')}
                   </span>
                   <span className={`block text-[10px] font-bold uppercase tracking-wider ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
-                    {selectedZoneObj?.borough || '—'} · #{selectedZone || '?'}
+                    {zonesLoading
+                      ? `${zones.length} available`
+                      : `${selectedZoneObj?.borough || '—'} · #${selectedZone || '?'}`}
                   </span>
                 </span>
               </span>
-              <ChevronDown size={18} className={`transition-transform ${zoneDropdownOpen ? 'rotate-180' : ''} ${isDark ? 'text-slate-400' : 'text-slate-500'}`} />
+              <ChevronDown size={18} className={`transition-transform shrink-0 ${zoneDropdownOpen ? 'rotate-180' : ''} ${isDark ? 'text-slate-400' : 'text-slate-500'}`} />
             </button>
             {zoneDropdownOpen && (
-              <div className={`absolute z-40 mt-2 w-full max-h-[280px] overflow-y-auto rounded-2xl border shadow-2xl ${
+              <div className={`absolute z-50 mt-2 w-full rounded-2xl border shadow-2xl overflow-hidden ${
                 isDark ? 'bg-[#0a0a0a] border-white/[0.08]' : 'bg-white border-slate-200'
               }`}>
-                {zones.map((z) => (
-                  <button
-                    key={z.location_id}
-                    onClick={() => {
-                      setSelectedZone(z.location_id.toString());
-                      setZoneDropdownOpen(false);
-                    }}
-                    className={`w-full text-left px-4 py-2.5 text-[12.5px] font-semibold transition-colors ${
-                      selectedZone === z.location_id.toString()
-                        ? 'bg-orange-500/10 text-orange-500'
-                        : (isDark ? 'text-slate-300 hover:bg-white/[0.03]' : 'text-slate-700 hover:bg-slate-50')
-                    }`}
-                  >
-                    <span className="font-black">#{z.location_id}</span> · {z.zone_name}
-                    <span className={`ml-1 text-[10px] font-bold uppercase tracking-wider ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
-                      {z.borough}
-                    </span>
-                  </button>
-                ))}
+                <div className={`px-3 py-2.5 border-b ${isDark ? 'border-white/[0.06]' : 'border-slate-100'}`}>
+                  <div className={`relative flex items-center`}>
+                    <Search size={14} className={`absolute left-3 ${isDark ? 'text-slate-500' : 'text-slate-400'}`} />
+                    <input
+                      type="text"
+                      value={zoneSearch}
+                      onChange={(e) => setZoneSearch(e.target.value)}
+                      placeholder="Search zone name, borough, or #ID…"
+                      className={`w-full pl-9 pr-9 py-2 rounded-xl text-[12px] font-semibold outline-none border transition-colors ${
+                        isDark
+                          ? 'bg-white/[0.03] border-white/[0.06] text-white placeholder:text-slate-600 focus:border-orange-500/40'
+                          : 'bg-slate-50 border-slate-200 text-slate-900 placeholder:text-slate-400 focus:border-orange-500/40'
+                      }`}
+                      autoFocus
+                    />
+                    {zoneSearch && (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); setZoneSearch(''); }}
+                        className={`absolute right-2.5 p-1 rounded-md ${isDark ? 'hover:bg-white/10 text-slate-500' : 'hover:bg-slate-200 text-slate-400'}`}
+                      >
+                        <X size={12} />
+                      </button>
+                    )}
+                  </div>
+                  <div className={`mt-2 flex items-center justify-between px-1 text-[10px] font-bold uppercase tracking-wider ${isDark ? 'text-slate-600' : 'text-slate-400'}`}>
+                    <span>{totalFilteredZones} of {zones.length} zones</span>
+                    <span>{Object.keys(filteredGroupedZones).length} boroughs</span>
+                  </div>
+                </div>
+                <div className="max-h-[340px] overflow-y-auto">
+                  {totalFilteredZones === 0 ? (
+                    <div className={`py-10 text-center ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                      <Search size={22} className="mx-auto mb-2 opacity-50" />
+                      <div className="text-[12px] font-bold">No zones match "{zoneSearch}"</div>
+                      <div className="text-[10.5px] mt-1 uppercase tracking-wider">Try a different search term</div>
+                    </div>
+                  ) : (
+                    Object.entries(filteredGroupedZones).map(([borough, bZones]) => (
+                      <div key={borough} className="py-1">
+                        <div className={`px-4 py-1.5 sticky top-0 backdrop-blur-sm ${isDark ? 'bg-[#0a0a0a]/80' : 'bg-white/80'}`}>
+                          <span className={`text-[9.5px] font-black uppercase tracking-[0.22em] ${isDark ? 'text-orange-400/80' : 'text-orange-600/80'}`}>
+                            {borough}
+                          </span>
+                          <span className={`ml-2 text-[9.5px] font-bold ${isDark ? 'text-slate-600' : 'text-slate-400'}`}>
+                            {bZones.length}
+                          </span>
+                        </div>
+                        <div>
+                          {bZones.map((z) => (
+                            <button
+                              key={z.location_id}
+                              onClick={() => {
+                                setSelectedZone(z.location_id.toString());
+                                setZoneDropdownOpen(false);
+                                setZoneSearch('');
+                              }}
+                              className={`w-full text-left px-4 py-2.5 text-[12.5px] font-semibold transition-colors border-l-2 ${
+                                selectedZone === z.location_id.toString()
+                                  ? `bg-orange-500/10 text-orange-500 border-orange-500`
+                                  : `border-transparent ${isDark ? 'text-slate-300 hover:bg-white/[0.03]' : 'text-slate-700 hover:bg-slate-50'}`
+                              }`}
+                            >
+                              <div className="flex items-center justify-between gap-2">
+                                <span className="truncate">
+                                  <span className={`font-black ${selectedZone === z.location_id.toString() ? '' : (isDark ? 'text-slate-400' : 'text-slate-500')}`}>#{z.location_id}</span>
+                                  <span className="mx-1.5 opacity-50">·</span>
+                                  <span className="truncate">{z.zone_name}</span>
+                                </span>
+                                {selectedZone === z.location_id.toString() && (
+                                  <CheckCircle size={14} className="text-orange-500 shrink-0" />
+                                )}
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
               </div>
             )}
           </div>
@@ -470,69 +581,86 @@ export default function ModelComparison() {
         </div>
       )}
 
-      {/* TOP KPI STRIP */}
+      {/* TOP KPI STRIP — single unified panel */}
       {loading ? (
-        <div className="grid md:grid-cols-4 gap-5">
-          {[0, 1, 2, 3].map((i) => <LoadingCard key={i} isDark={isDark} />)}
-        </div>
+        <LoadingCard isDark={isDark} />
       ) : comparison ? (
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-5"
+          className={`rounded-3xl border shadow-2xl backdrop-blur-2xl overflow-hidden ${
+            isDark
+              ? 'border-white/[0.08] bg-gradient-to-br from-[#1a1a1a]/80 to-[#0a0a0a]/80'
+              : 'border-slate-200 bg-gradient-to-br from-white via-slate-50/40 to-white'
+          }`}
         >
-          {[
-            {
-              icon: <Trophy color="#fff" size={18} />,
-              eyebrow: 'Best Model',
-              title: 'Holdout champion',
-              value: MODEL_DISPLAY[comparison.selected_model]?.label || comparison.selected_model,
-              sub: comparison.recommendation,
-              color: 'from-rose-500/30 to-orange-500/20 border-rose-500/30',
-              valSize: 'text-lg',
-            },
-            {
-              icon: <TrendingUp color="#fff" size={18} />,
-              eyebrow: 'vs Baseline',
-              title: 'WMAPE improvement',
-              value: `${(comparison.improvement_over_baseline_sarimax?.[comparison.selected_model] ?? 0).toFixed(1)}%`,
-              sub: `Improvement over ${MODEL_DISPLAY[baselineKey]?.label || 'SARIMAX baseline'}`,
-              color: 'from-emerald-500/30 to-cyan-500/15 border-emerald-500/30',
-            },
-            {
-              icon: <Gauge color="#fff" size={18} />,
-              eyebrow: 'Models Evaluated',
-              title: 'Candidates compared',
-              value: `${sortedKeys.filter((k) => k !== 'ensemble').length} + Ensemble`,
-              sub: 'Each trained on same train/test split',
-              color: 'from-violet-500/25 to-blue-500/15 border-violet-500/30',
-            },
-            {
-              icon: <Clock color="#fff" size={18} />,
-              eyebrow: 'Snapshot',
-              title: 'Generated at',
-              value: comparison.comparison_generated_at
-                ? new Date(comparison.comparison_generated_at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
-                : '—',
-              sub: comparison.from_cache ? 'Served from cache' : 'Freshly evaluated',
-              color: 'from-amber-500/25 to-yellow-500/10 border-amber-500/30',
-            },
-          ].map((k, i) => (
-            <div
-              key={i}
-              className={`rounded-3xl border p-5 shadow-2xl backdrop-blur-3xl bg-gradient-to-br ${k.color} ${isDark ? '' : ''}`}
-            >
-              <div className="flex items-center justify-between mb-3">
-                <span className={`text-[10px] font-black uppercase tracking-[0.22em] ${isDark ? 'text-white/60' : 'text-slate-500'}`}>{k.eyebrow}</span>
-                <span className={`p-1.5 rounded-xl bg-white/10 backdrop-blur`}>{k.icon}</span>
+          <div className="grid grid-cols-2 md:grid-cols-4">
+            {[
+              {
+                icon: <Trophy size={18} />,
+                eyebrow: 'Best Model',
+                title: 'Holdout champion',
+                value: MODEL_DISPLAY[comparison.selected_model]?.label || comparison.selected_model,
+                sub: comparison.recommendation,
+                accent: true,
+                valSize: 'text-lg',
+              },
+              {
+                icon: <TrendingUp size={18} />,
+                eyebrow: 'vs Baseline',
+                title: 'WMAPE improvement',
+                value: `${(comparison.improvement_over_baseline_sarimax?.[comparison.selected_model] ?? 0).toFixed(1)}%`,
+                sub: `Improvement over ${MODEL_DISPLAY[baselineKey]?.label || 'SARIMAX baseline'}`,
+              },
+              {
+                icon: <Gauge size={18} />,
+                eyebrow: 'Models Evaluated',
+                title: 'Candidates compared',
+                value: `${sortedKeys.filter((k) => k !== 'ensemble').length} + Ensemble`,
+                sub: 'Each trained on same train/test split',
+              },
+              {
+                icon: <Clock size={18} />,
+                eyebrow: 'Snapshot',
+                title: 'Generated at',
+                value: comparison.comparison_generated_at
+                  ? new Date(comparison.comparison_generated_at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+                  : '—',
+                sub: comparison.from_cache ? 'Served from cache' : 'Freshly evaluated',
+              },
+            ].map((k, i) => (
+              <div
+                key={i}
+                className={`p-5 md:p-6 relative ${
+                  i < 3
+                    ? isDark
+                      ? 'md:border-r border-white/[0.06] col-span-2 md:col-span-1 md:border-b-0' + (i === 0 || i === 1 ? ' border-b md:border-b-0 border-white/[0.06]' : '')
+                      : 'md:border-r border-slate-100 col-span-2 md:col-span-1 md:border-b-0' + (i === 0 || i === 1 ? ' border-b md:border-b-0 border-slate-100' : '')
+                    : ''
+                } ${
+                  k.accent
+                    ? isDark
+                      ? 'bg-orange-500/[0.04]'
+                      : 'bg-orange-50/50'
+                    : ''
+                }`}
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <span className={`text-[10px] font-black uppercase tracking-[0.22em] ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>{k.eyebrow}</span>
+                  <span className={`p-1.5 rounded-xl ${
+                    k.accent
+                      ? (isDark ? 'bg-orange-500/15 text-orange-500' : 'bg-orange-500/10 text-orange-600')
+                      : (isDark ? 'bg-white/[0.04] text-slate-400' : 'bg-slate-100 text-slate-500')
+                  }`}>{k.icon}</span>
+                </div>
+                <p className={`text-[11px] font-semibold ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>{k.title}</p>
+                <div className={`mt-2 font-black tracking-tight ${k.valSize || 'text-2xl'} ${isDark ? 'text-white' : 'text-slate-900'} truncate`}>
+                  {k.value}
+                </div>
+                <p className={`mt-2 text-[11.5px] leading-5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{k.sub}</p>
               </div>
-              <p className={`text-[11px] font-semibold ${isDark ? 'text-white/60' : 'text-slate-500'}`}>{k.title}</p>
-              <div className={`mt-2 font-black tracking-tight ${k.valSize || 'text-2xl'} ${isDark ? 'text-white' : 'text-slate-900'} truncate`}>
-                {k.value}
-              </div>
-              <p className={`mt-2 text-[11.5px] leading-5 ${isDark ? 'text-white/55' : 'text-slate-500'}`}>{k.sub}</p>
-            </div>
-          ))}
+            ))}
+          </div>
         </motion.div>
       ) : null}
 
@@ -554,7 +682,7 @@ export default function ModelComparison() {
             <div className="flex items-start justify-between mb-5 gap-4 flex-wrap">
               <div>
                 <div className="flex items-center gap-2 mb-1.5">
-                  <Target size={17} className="text-violet-500" />
+                  <Target size={17} className="text-orange-500" />
                   <span className={`text-[11px] font-black uppercase tracking-[0.22em] ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
                     Strength Profiles
                   </span>
@@ -573,10 +701,11 @@ export default function ModelComparison() {
                       onClick={() => toggleModel(k)}
                       className={`px-2.5 py-1.5 rounded-xl text-[10.5px] font-black uppercase tracking-wider border transition-all ${
                         on
-                          ? 'border-transparent text-white'
+                          ? isDark
+                            ? 'bg-orange-500 text-black border-orange-500'
+                            : 'bg-orange-500 text-white border-orange-500'
                           : (isDark ? 'border-white/[0.08] text-slate-500 bg-white/[0.02] hover:text-slate-300' : 'border-slate-200 text-slate-400 bg-slate-50 hover:text-slate-600')
                       }`}
-                      style={on ? { background: m.color } : undefined}
                     >
                       {m.short}
                     </button>
@@ -591,12 +720,12 @@ export default function ModelComparison() {
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.05 }}
-            className={`rounded-3xl border p-6 md:p-7 shadow-2xl backdrop-blur-3xl ${
+            className={`rounded-3xl border p-6 md:p-7 shadow-2xl backdrop-blur-2xl ${
               isDark ? 'border-white/[0.08] bg-[#0a0a0a]/80' : 'border-slate-200 bg-white'
             }`}
           >
             <div className="flex items-center gap-2 mb-1.5">
-              <PieChart size={17} className="text-rose-500" />
+              <PieChart size={17} className="text-orange-500" />
               <span className={`text-[11px] font-black uppercase tracking-[0.22em] ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
                 Ensemble Weights
               </span>
@@ -607,10 +736,10 @@ export default function ModelComparison() {
             <WeightsDonut weights={comparison.ensemble_weights} isDark={isDark} />
             <div className={`mt-6 pt-5 border-t ${isDark ? 'border-white/[0.06]' : 'border-slate-100'}`}>
               <div className="flex items-start gap-2.5">
-                <Shield size={16} className="text-emerald-500 mt-0.5 shrink-0" />
+                <Shield size={16} className="text-orange-500 mt-0.5 shrink-0" />
                 <p className={`text-[11.5px] leading-5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
                   Models with lower validation WMAPE receive higher weight. Ensemble
-                  automatically combines predictions — typically <span className={`font-black ${isDark ? 'text-emerald-400' : 'text-emerald-700'}`}>2–8% more accurate</span> than any single model.
+                  automatically combines predictions — typically <span className={`font-black ${isDark ? 'text-orange-500' : 'text-orange-600'}`}>2–8% more accurate</span> than any single model.
                 </p>
               </div>
             </div>
@@ -632,7 +761,7 @@ export default function ModelComparison() {
           <div className="flex items-start justify-between mb-6 gap-4 flex-wrap">
             <div>
               <div className="flex items-center gap-2 mb-1.5">
-                <BarChart3 size={17} className="text-emerald-500" />
+                <BarChart3 size={17} className="text-orange-500" />
                 <span className={`text-[11px] font-black uppercase tracking-[0.22em] ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
                   Holdout Metrics
                 </span>
@@ -660,24 +789,31 @@ export default function ModelComparison() {
                   className={`relative rounded-2xl border p-5 transition-all ${
                     isWinner
                       ? (isDark
-                          ? 'border-orange-500/40 bg-gradient-to-br from-orange-500/10 via-[#0f0f0f] to-[#050505] shadow-[0_0_40px_rgba(249,115,22,0.15)]'
-                          : 'border-orange-500/30 bg-gradient-to-br from-orange-50 via-white to-amber-50 shadow-[0_0_30px_rgba(249,115,22,0.1)]')
+                          ? 'border-orange-500/40 bg-gradient-to-br from-orange-500/[0.08] via-[#0f0f0f] to-[#050505]'
+                          : 'border-orange-500/30 bg-gradient-to-br from-orange-50/80 via-white to-orange-50/40')
                       : (isDark
                           ? 'border-white/[0.06] bg-[#0d0d0d]/60 hover:border-white/[0.12]'
                           : 'border-slate-200 bg-white hover:border-slate-300')
                   }`}
                 >
                   {isWinner && (
-                    <div className="absolute -top-2.5 right-4 px-2.5 py-1 rounded-xl bg-gradient-to-r from-orange-500 to-rose-500 text-white text-[10px] font-black uppercase tracking-[0.18em] shadow-lg">
-                      <span className="flex items-center gap-1"><Star size={10} fill="#fff" /> Champion</span>
+                    <div className={`absolute -top-2.5 right-4 px-2.5 py-1 rounded-xl text-[10px] font-black uppercase tracking-[0.18em] shadow-md ${
+                      isDark
+                        ? 'bg-orange-500 text-black'
+                        : 'bg-orange-500 text-white'
+                    }`}>
+                      <span className="flex items-center gap-1"><Star size={10} fill={isDark ? '#000' : '#fff'} /> Champion</span>
                     </div>
                   )}
                   <div className="flex items-center gap-3 mb-4">
                     <span
-                      className="p-2 rounded-xl shrink-0"
-                      style={{ background: m.fill, border: `1px solid ${m.stroke}` }}
+                      className={`p-2 rounded-xl shrink-0 ${
+                        isWinner
+                          ? (isDark ? 'bg-orange-500/15 text-orange-500 border border-orange-500/30' : 'bg-orange-500/10 text-orange-600 border border-orange-200')
+                          : (isDark ? 'bg-white/[0.04] text-slate-400 border border-white/[0.06]' : 'bg-slate-100 text-slate-500 border border-slate-200')
+                      }`}
                     >
-                      <Zap size={16} style={{ color: m.color }} />
+                      <Zap size={16} />
                     </span>
                     <div className="min-w-0">
                       <p className={`text-[15px] font-black truncate ${isDark ? 'text-white' : 'text-slate-900'}`}>{m.label}</p>
@@ -695,20 +831,20 @@ export default function ModelComparison() {
                     </div>
                   </div>
                   <div className="space-y-3.5">
-                    <MetricBar label="MAE" value={r.mae} unit="trips" max={maxMae} color={m.color} isDark={isDark} />
-                    <MetricBar label="RMSE" value={r.rmse} unit="trips" max={maxRmse} color={m.color} isDark={isDark} />
-                    <MetricBar label="WMAPE" value={r.wmape} unit="%" max={maxWmape} color={m.color} isDark={isDark} rank={k === comparison.selected_model ? 1 : null} />
+                    <MetricBar label="MAE" value={r.mae} unit="trips" max={maxMae} color={isDark ? '#fb923c' : '#f97316'} isDark={isDark} />
+                    <MetricBar label="RMSE" value={r.rmse} unit="trips" max={maxRmse} color={isDark ? '#fb923c' : '#f97316'} isDark={isDark} />
+                    <MetricBar label="WMAPE" value={r.wmape} unit="%" max={maxWmape} color={isDark ? '#fb923c' : '#f97316'} isDark={isDark} rank={k === comparison.selected_model ? 1 : null} />
                   </div>
                   <div className={`mt-4 pt-4 border-t flex items-center justify-between ${isDark ? 'border-white/[0.06]' : 'border-slate-100'}`}>
                     <span className={`text-[10.5px] font-bold uppercase tracking-wider ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
                       Weight
                     </span>
-                    <span className="text-[14px] font-black tabular-nums" style={{ color: m.color }}>
+                    <span className={`text-[14px] font-black tabular-nums ${isDark ? 'text-orange-500' : 'text-orange-600'}`}>
                       {((comparison.ensemble_weights?.[k] ?? 0) * 100).toFixed(1)}%
                     </span>
                   </div>
                   {!isBaseline && (
-                    <div className={`mt-2 flex items-center gap-1.5 ${improve >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                    <div className={`mt-2 flex items-center gap-1.5 ${improve >= 0 ? (isDark ? 'text-orange-500' : 'text-orange-600') : (isDark ? 'text-slate-500' : 'text-slate-500')}`}>
                       {improve >= 0 ? <CheckCircle2 size={13} /> : <AlertCircle size={13} />}
                       <span className="text-[11px] font-black uppercase tracking-wider">
                         {improve >= 0 ? '+' : ''}{improve.toFixed(1)}% vs baseline
@@ -737,7 +873,7 @@ export default function ModelComparison() {
           <div className="flex items-start justify-between mb-6 gap-4 flex-wrap">
             <div>
               <div className="flex items-center gap-2 mb-1.5">
-                <Zap size={17} className="text-amber-500" />
+                <Zap size={17} className="text-orange-500" />
                 <span className={`text-[11px] font-black uppercase tracking-[0.22em] ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
                   Feature Drivers
                 </span>
@@ -770,17 +906,24 @@ export default function ModelComparison() {
                         initial={{ width: 0 }}
                         animate={{ width: `${pct}%` }}
                         transition={{ duration: 0.8, ease: 'easeOut' }}
-                        className="h-full rounded-full"
-                        style={{ background: 'linear-gradient(90deg, rgba(249,115,22,0.9), rgba(244,63,94,0.9))' }}
+                        className={`h-full rounded-full ${
+                          isDark
+                            ? 'bg-gradient-to-r from-orange-500 to-orange-400'
+                            : 'bg-gradient-to-r from-orange-500 to-orange-400'
+                        }`}
                       />
                     </div>
                   </div>
                 );
               })}
             </div>
-            <div className={`rounded-2xl border p-5 ${isDark ? 'border-white/[0.06] bg-gradient-to-br from-[#0e0e0e] to-[#070707]' : 'border-slate-100 bg-gradient-to-br from-slate-50 to-white'}`}>
+            <div className={`rounded-2xl border p-5 ${
+              isDark
+                ? 'border-white/[0.06] bg-gradient-to-br from-[#141414]/80 to-[#0a0a0a]/80'
+                : 'border-slate-100 bg-gradient-to-br from-slate-50/80 to-white'
+            }`}>
               <div className="flex items-center gap-2 mb-4">
-                <Star size={15} className="text-amber-500" />
+                <Star size={15} className="text-orange-500" />
                 <span className={`text-[11px] font-black uppercase tracking-[0.2em] ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
                   Top Individual Features
                 </span>
