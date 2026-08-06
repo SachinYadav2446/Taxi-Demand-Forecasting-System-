@@ -6,7 +6,7 @@ import { useTheme } from '../context/ThemeContext';
 import {
   CloudRain, Music, Train, Plane, TrendingUp, CheckCircle,
   Zap, BarChart3, Clock, ChevronDown, Layers, Star,
-  AlertCircle, Sparkles, Target, Gauge, Info, Sliders,
+  AlertCircle, Sparkles, Target, Gauge, Info, Sliders, Search, X,
 } from 'lucide-react';
 
 const MODEL_CHIPS = [
@@ -352,7 +352,10 @@ export default function EnhancedForecast() {
 
   const [selectedZone, setSelectedZone] = useState('');
   const [zones, setZones] = useState([]);
+  const [groupedZones, setGroupedZones] = useState({});
   const [zoneDropdownOpen, setZoneDropdownOpen] = useState(false);
+  const [zoneSearch, setZoneSearch] = useState('');
+  const zoneDropdownRef = useRef(null);
   const [weather, setWeather] = useState(null);
   const [events, setEvents] = useState(null);
   const [forecast, setForecast] = useState(null);
@@ -363,33 +366,78 @@ export default function EnhancedForecast() {
   const [error, setError] = useState(null);
   const [horizon, setHorizon] = useState('hourly');
   const [activeModel, setActiveModel] = useState('ensemble');
+  const [zonesLoading, setZonesLoading] = useState(false);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (zoneDropdownRef.current && !zoneDropdownRef.current.contains(event.target)) {
+        setZoneDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   useEffect(() => {
     const fetchZones = async () => {
+      setZonesLoading(true);
       try {
         const endpoint = user?.role === 'operator' ? '/zones/company' : '/zones/';
         const res = await api.get(endpoint);
         let availableZones = [];
         if (user?.role === 'operator') {
           availableZones = res.data;
+          const boroughGroups = {};
+          res.data.forEach((z) => {
+            const b = z.borough || 'Unknown';
+            if (!boroughGroups[b]) boroughGroups[b] = [];
+            boroughGroups[b].push(z);
+          });
+          setGroupedZones(boroughGroups);
         } else {
-          Object.values(res.data).forEach((arr) => {
+          Object.entries(res.data).forEach(([borough, arr]) => {
             availableZones = [...availableZones, ...arr];
+            setGroupedZones(res.data);
           });
         }
         setZones(availableZones);
         if (availableZones.length) {
-          setSelectedZone(availableZones[0].location_id.toString());
+          setSelectedZone((cur) => {
+            const exists = availableZones.some((z) => z.location_id.toString() === cur);
+            return exists ? cur : availableZones[0].location_id.toString();
+          });
         }
       } catch (err) {
         console.error('zones', err);
         setZones([]);
+        setGroupedZones({});
+      } finally {
+        setZonesLoading(false);
       }
     };
     fetchZones();
     fetchWeather();
     fetchEvents();
   }, [user]);
+
+  const filteredGroupedZones = useMemo(() => {
+    const q = zoneSearch.trim().toLowerCase();
+    if (!q) return groupedZones;
+    const result = {};
+    Object.entries(groupedZones).forEach(([borough, arr]) => {
+      const filtered = (arr || []).filter((z) =>
+        (z.zone_name || '').toLowerCase().includes(q) ||
+        (z.borough || '').toLowerCase().includes(q) ||
+        String(z.location_id).includes(q)
+      );
+      if (filtered.length) result[borough] = filtered;
+    });
+    return result;
+  }, [groupedZones, zoneSearch]);
+
+  const totalFilteredZones = useMemo(() => {
+    return Object.values(filteredGroupedZones).reduce((sum, arr) => sum + (arr?.length || 0), 0);
+  }, [filteredGroupedZones]);
 
   useEffect(() => {
     if (!selectedZone) return;
@@ -453,28 +501,30 @@ export default function EnhancedForecast() {
       <motion.div
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
-        className={`rounded-3xl border p-6 md:p-8 shadow-2xl backdrop-blur-3xl bg-gradient-to-br ${
+        className={`relative z-10 rounded-3xl border p-6 md:p-8 shadow-2xl backdrop-blur-2xl ${
           isDark
-            ? 'border-orange-500/20 from-orange-950/25 via-[#121212]/95 to-[#050505]/95'
-            : 'border-orange-500/20 from-orange-50/90 via-white to-orange-50/40'
+            ? 'border-white/[0.08] bg-gradient-to-br from-[#1a1a1a]/80 to-[#0a0a0a]/80'
+            : 'border-slate-200 bg-gradient-to-br from-white via-slate-50/60 to-white'
         }`}
       >
         <div className="flex items-start justify-between gap-6 flex-wrap">
           <div className="flex items-center gap-4">
-            <div className="p-3.5 rounded-2xl bg-gradient-to-br from-violet-500 to-blue-600 shadow-[0_0_30px_rgba(139,92,246,0.35)]">
-              <Zap size={24} className="text-white" />
+            <div className={`p-3.5 rounded-2xl ${isDark ? 'bg-orange-500/10 text-orange-500 border border-orange-500/20' : 'bg-orange-50 text-orange-600 border border-orange-200'}`}>
+              <Zap size={24} />
             </div>
             <div>
               <div className="flex items-center gap-2 mb-1.5">
-                <span className="px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-[0.2em] bg-violet-500/15 text-violet-500 border border-violet-500/20">
+                <span className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-[0.2em] ${
+                  isDark
+                    ? 'bg-orange-500/10 text-orange-400 border border-orange-500/20'
+                    : 'bg-orange-50 text-orange-600 border border-orange-200'
+                }`}>
                   Ensemble Forecast
                 </span>
                 <span className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-[0.2em] ${
-                  estBand === 'high'
-                    ? 'bg-emerald-500/15 text-emerald-500 border border-emerald-500/20'
-                    : estBand === 'medium'
-                      ? 'bg-amber-500/15 text-amber-500 border border-amber-500/20'
-                      : 'bg-slate-500/15 text-slate-500 border border-slate-500/20'
+                  isDark
+                    ? 'bg-white/[0.03] text-slate-400 border border-white/[0.08]'
+                    : 'bg-slate-50 text-slate-600 border border-slate-200'
                 }`}>
                   Confidence · {estBand}
                 </span>
@@ -503,7 +553,9 @@ export default function EnhancedForecast() {
                     onClick={() => setHorizon(h.k)}
                     className={`px-4 py-2 rounded-xl text-[11.5px] font-black uppercase tracking-wider transition-all ${
                       horizon === h.k
-                        ? 'bg-gradient-to-br from-orange-500 to-rose-500 text-white shadow-lg'
+                        ? isDark
+                          ? 'bg-orange-500 text-black shadow-md'
+                          : 'bg-orange-500 text-white shadow-md'
                         : (isDark ? 'text-slate-400 hover:text-white' : 'text-slate-500 hover:text-slate-900')
                     }`}
                   >
@@ -513,7 +565,7 @@ export default function EnhancedForecast() {
               </div>
             </div>
 
-            <div className="relative min-w-[260px]">
+            <div className="relative min-w-[300px]" ref={zoneDropdownRef}>
               <label className={`block text-[10px] font-black uppercase tracking-[0.2em] mb-2 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
                 Target Zone
               </label>
@@ -523,44 +575,107 @@ export default function EnhancedForecast() {
                   isDark
                     ? 'bg-[#0a0a0a] border-white/[0.08] hover:border-orange-500/30 text-white'
                     : 'bg-white border-slate-200 hover:border-orange-500/30 text-slate-900'
-                }`}
+                } ${zonesLoading ? 'opacity-60 cursor-wait' : ''}`}
+                disabled={zonesLoading}
               >
                 <span className="flex items-center gap-3 text-left">
                   <Star size={15} className="text-orange-500 shrink-0" />
                   <span>
-                    <span className="block text-[13px] font-black truncate max-w-[170px]">
-                      {selectedZoneObj?.zone_name || 'Select zone…'}
+                    <span className="block text-[13px] font-black truncate max-w-[190px]">
+                      {zonesLoading ? 'Loading zones…' : (selectedZoneObj?.zone_name || 'Select zone…')}
                     </span>
                     <span className={`block text-[10px] font-bold uppercase tracking-wider ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
-                      {selectedZoneObj?.borough || '—'} · #{selectedZone || '?'}
+                      {zonesLoading
+                        ? `${zones.length} available`
+                        : `${selectedZoneObj?.borough || '—'} · #${selectedZone || '?'}`}
                     </span>
                   </span>
                 </span>
-                <ChevronDown size={18} className={`transition-transform ${zoneDropdownOpen ? 'rotate-180' : ''} ${isDark ? 'text-slate-400' : 'text-slate-500'}`} />
+                <ChevronDown size={18} className={`transition-transform shrink-0 ${zoneDropdownOpen ? 'rotate-180' : ''} ${isDark ? 'text-slate-400' : 'text-slate-500'}`} />
               </button>
               {zoneDropdownOpen && (
-                <div className={`absolute z-40 mt-2 w-full max-h-[280px] overflow-y-auto rounded-2xl border shadow-2xl ${
+                <div className={`absolute z-50 mt-2 w-full rounded-2xl border shadow-2xl overflow-hidden ${
                   isDark ? 'bg-[#0a0a0a] border-white/[0.08]' : 'bg-white border-slate-200'
                 }`}>
-                  {zones.map((z) => (
-                    <button
-                      key={z.location_id}
-                      onClick={() => {
-                        setSelectedZone(z.location_id.toString());
-                        setZoneDropdownOpen(false);
-                      }}
-                      className={`w-full text-left px-4 py-2.5 text-[12.5px] font-semibold transition-colors ${
-                        selectedZone === z.location_id.toString()
-                          ? 'bg-orange-500/10 text-orange-500'
-                          : (isDark ? 'text-slate-300 hover:bg-white/[0.03]' : 'text-slate-700 hover:bg-slate-50')
-                      }`}
-                    >
-                      <span className="font-black">#{z.location_id}</span> · {z.zone_name}
-                      <span className={`ml-1 text-[10px] font-bold uppercase tracking-wider ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
-                        {z.borough}
-                      </span>
-                    </button>
-                  ))}
+                  <div className={`px-3 py-2.5 border-b ${isDark ? 'border-white/[0.06]' : 'border-slate-100'}`}>
+                    <div className={`relative flex items-center`}>
+                      <Search size={14} className={`absolute left-3 ${isDark ? 'text-slate-500' : 'text-slate-400'}`} />
+                      <input
+                        type="text"
+                        value={zoneSearch}
+                        onChange={(e) => setZoneSearch(e.target.value)}
+                        placeholder="Search zone name, borough, or #ID…"
+                        className={`w-full pl-9 pr-9 py-2 rounded-xl text-[12px] font-semibold outline-none border transition-colors ${
+                          isDark
+                            ? 'bg-white/[0.03] border-white/[0.06] text-white placeholder:text-slate-600 focus:border-orange-500/40'
+                            : 'bg-slate-50 border-slate-200 text-slate-900 placeholder:text-slate-400 focus:border-orange-500/40'
+                        }`}
+                        autoFocus
+                      />
+                      {zoneSearch && (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setZoneSearch(''); }}
+                          className={`absolute right-2.5 p-1 rounded-md ${isDark ? 'hover:bg-white/10 text-slate-500' : 'hover:bg-slate-200 text-slate-400'}`}
+                        >
+                          <X size={12} />
+                        </button>
+                      )}
+                    </div>
+                    <div className={`mt-2 flex items-center justify-between px-1 text-[10px] font-bold uppercase tracking-wider ${isDark ? 'text-slate-600' : 'text-slate-400'}`}>
+                      <span>{totalFilteredZones} of {zones.length} zones</span>
+                      <span>{Object.keys(filteredGroupedZones).length} boroughs</span>
+                    </div>
+                  </div>
+                  <div className="max-h-[340px] overflow-y-auto">
+                    {totalFilteredZones === 0 ? (
+                      <div className={`py-10 text-center ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                        <Search size={22} className="mx-auto mb-2 opacity-50" />
+                        <div className="text-[12px] font-bold">No zones match "{zoneSearch}"</div>
+                        <div className="text-[10.5px] mt-1 uppercase tracking-wider">Try a different search term</div>
+                      </div>
+                    ) : (
+                      Object.entries(filteredGroupedZones).map(([borough, bZones]) => (
+                        <div key={borough} className="py-1">
+                          <div className={`px-4 py-1.5 sticky top-0 backdrop-blur-sm ${isDark ? 'bg-[#0a0a0a]/80' : 'bg-white/80'}`}>
+                            <span className={`text-[9.5px] font-black uppercase tracking-[0.22em] ${isDark ? 'text-orange-400/80' : 'text-orange-600/80'}`}>
+                              {borough}
+                            </span>
+                            <span className={`ml-2 text-[9.5px] font-bold ${isDark ? 'text-slate-600' : 'text-slate-400'}`}>
+                              {bZones.length}
+                            </span>
+                          </div>
+                          <div>
+                            {bZones.map((z) => (
+                              <button
+                                key={z.location_id}
+                                onClick={() => {
+                                  setSelectedZone(z.location_id.toString());
+                                  setZoneDropdownOpen(false);
+                                  setZoneSearch('');
+                                }}
+                                className={`w-full text-left px-4 py-2.5 text-[12.5px] font-semibold transition-colors border-l-2 ${
+                                  selectedZone === z.location_id.toString()
+                                    ? `bg-orange-500/10 text-orange-500 border-orange-500 ${isDark ? '' : ''}`
+                                    : `border-transparent ${isDark ? 'text-slate-300 hover:bg-white/[0.03]' : 'text-slate-700 hover:bg-slate-50'}`
+                                }`}
+                              >
+                                <div className="flex items-center justify-between gap-2">
+                                  <span className="truncate">
+                                    <span className={`font-black ${selectedZone === z.location_id.toString() ? '' : (isDark ? 'text-slate-400' : 'text-slate-500')}`}>#{z.location_id}</span>
+                                    <span className="mx-1.5 opacity-50">·</span>
+                                    <span className="truncate">{z.zone_name}</span>
+                                  </span>
+                                  {selectedZone === z.location_id.toString() && (
+                                    <CheckCircle size={14} className="text-orange-500 shrink-0" />
+                                  )}
+                                </div>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
                 </div>
               )}
             </div>
@@ -586,10 +701,11 @@ export default function EnhancedForecast() {
                   !has
                     ? (isDark ? 'border-white/[0.05] text-slate-600 cursor-not-allowed bg-white/[0.02]' : 'border-slate-100 text-slate-300 cursor-not-allowed bg-slate-50')
                     : on
-                      ? 'text-white border-transparent shadow-lg'
-                      : (isDark ? 'border-white/[0.10] text-slate-400 hover:text-white' : 'border-slate-200 text-slate-500 hover:text-slate-900')
+                      ? isDark
+                        ? 'bg-orange-500 text-black border-orange-500 shadow-md'
+                        : 'bg-orange-500 text-white border-orange-500 shadow-md'
+                      : (isDark ? 'border-white/[0.10] text-slate-400 hover:text-white hover:border-white/20' : 'border-slate-200 text-slate-500 hover:text-slate-900 hover:border-slate-300')
                 }`}
-                style={on ? { background: `linear-gradient(135deg, ${c.color}dd, ${c.color})` } : undefined}
               >
                 {c.label}
               </button>
@@ -598,62 +714,82 @@ export default function EnhancedForecast() {
         </div>
       </motion.div>
 
-      {/* KPI STRIP */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-5">
-        {[
-          {
-            icon: <Gauge size={17} style={{ color: '#fff' }} />,
-            eyebrow: 'Accuracy',
-            title: 'Estimated',
-            value: `${estAcc.toFixed(1)}%`,
-            sub: `Confidence band: ${estBand}`,
-            color: 'from-emerald-500/30 to-cyan-500/15 border-emerald-500/30',
-          },
-          {
-            icon: <Sparkles size={17} style={{ color: '#fff' }} />,
-            eyebrow: 'Engine',
-            title: 'Active model',
-            value: meta.model_name || '—',
-            sub: (meta.features_used || []).filter(Boolean).join(' · ') || 'features pending',
-            color: 'from-violet-500/25 to-blue-500/15 border-violet-500/30',
-            valSize: 'text-[15px]',
-          },
-          {
-            icon: <Target size={17} style={{ color: '#fff' }} />,
-            eyebrow: 'Peak Demand',
-            title: horizon === 'hourly' ? 'Peak hour' : 'Peak day',
-            value: peak ? Math.round(peak.value || peak.predicted_demand || 0).toLocaleString() : '—',
-            sub: peak?.timestamp ? new Date(peak.timestamp).toLocaleString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit' }) : 'pending',
-            color: 'from-orange-500/28 to-rose-500/15 border-orange-500/30',
-          },
-          {
-            icon: <BarChart3 size={17} style={{ color: '#fff' }} />,
-            eyebrow: 'Average',
-            title: horizon === 'hourly' ? 'Trips / hour' : 'Trips / day',
-            value: Math.round(avgDemand).toLocaleString(),
-            sub: `${(forecast?.predicted || []).length} ${horizon} windows forecasted`,
-            color: 'from-sky-500/25 to-blue-500/15 border-sky-500/30',
-          },
-        ].map((k, i) => (
-          <motion.div
-            key={i}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.02 * i }}
-            className={`rounded-3xl border p-5 shadow-2xl backdrop-blur-3xl bg-gradient-to-br ${k.color}`}
-          >
-            <div className="flex items-center justify-between mb-3">
-              <span className={`text-[10px] font-black uppercase tracking-[0.22em] ${isDark ? 'text-white/60' : 'text-slate-500'}`}>{k.eyebrow}</span>
-              <span className="p-1.5 rounded-xl bg-white/10 backdrop-blur">{k.icon}</span>
+      {/* KPI STRIP — single unified panel */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className={`rounded-3xl border shadow-2xl backdrop-blur-2xl overflow-hidden ${
+          isDark
+            ? 'border-white/[0.08] bg-gradient-to-br from-[#1a1a1a]/80 to-[#0a0a0a]/80'
+            : 'border-slate-200 bg-gradient-to-br from-white via-slate-50/40 to-white'
+        }`}
+      >
+        <div className="grid grid-cols-2 md:grid-cols-4">
+          {[
+            {
+              icon: <Gauge size={17} />,
+              eyebrow: 'Accuracy',
+              title: 'Estimated',
+              value: `${estAcc.toFixed(1)}%`,
+              sub: `Confidence band: ${estBand}`,
+              accent: true,
+            },
+            {
+              icon: <Sparkles size={17} />,
+              eyebrow: 'Engine',
+              title: 'Active model',
+              value: meta.model_name || '—',
+              sub: (meta.features_used || []).filter(Boolean).join(' · ') || 'features pending',
+              valSize: 'text-[15px]',
+            },
+            {
+              icon: <Target size={17} />,
+              eyebrow: 'Peak Demand',
+              title: horizon === 'hourly' ? 'Peak hour' : 'Peak day',
+              value: peak ? Math.round(peak.value || peak.predicted_demand || 0).toLocaleString() : '—',
+              sub: peak?.timestamp ? new Date(peak.timestamp).toLocaleString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit' }) : 'pending',
+            },
+            {
+              icon: <BarChart3 size={17} />,
+              eyebrow: 'Average',
+              title: horizon === 'hourly' ? 'Trips / hour' : 'Trips / day',
+              value: Math.round(avgDemand).toLocaleString(),
+              sub: `${(forecast?.predicted || []).length} ${horizon} windows forecasted`,
+            },
+          ].map((k, i) => (
+            <div
+              key={i}
+              className={`p-5 md:p-6 relative ${
+                i < 3
+                  ? isDark
+                    ? 'md:border-r border-white/[0.06] col-span-2 md:col-span-1 md:border-b-0' + (i === 0 || i === 1 ? ' border-b md:border-b-0 border-white/[0.06]' : '')
+                    : 'md:border-r border-slate-100 col-span-2 md:col-span-1 md:border-b-0' + (i === 0 || i === 1 ? ' border-b md:border-b-0 border-slate-100' : '')
+                  : ''
+              } ${
+                k.accent
+                  ? isDark
+                    ? 'bg-orange-500/[0.04]'
+                    : 'bg-orange-50/50'
+                  : ''
+              }`}
+            >
+              <div className="flex items-center justify-between mb-3">
+                <span className={`text-[10px] font-black uppercase tracking-[0.22em] ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>{k.eyebrow}</span>
+                <span className={`p-1.5 rounded-xl ${
+                  k.accent
+                    ? (isDark ? 'bg-orange-500/15 text-orange-500' : 'bg-orange-500/10 text-orange-600')
+                    : (isDark ? 'bg-white/[0.04] text-slate-400' : 'bg-slate-100 text-slate-500')
+                }`}>{k.icon}</span>
+              </div>
+              <p className={`text-[11px] font-semibold ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>{k.title}</p>
+              <div className={`mt-2 font-black tracking-tight ${k.valSize || 'text-2xl'} ${isDark ? 'text-white' : 'text-slate-900'} truncate`}>
+                {k.value}
+              </div>
+              <p className={`mt-2 text-[11.5px] leading-5 truncate ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{k.sub}</p>
             </div>
-            <p className={`text-[11px] font-semibold ${isDark ? 'text-white/60' : 'text-slate-500'}`}>{k.title}</p>
-            <div className={`mt-2 font-black tracking-tight ${k.valSize || 'text-2xl'} ${isDark ? 'text-white' : 'text-slate-900'} truncate`}>
-              {k.value}
-            </div>
-            <p className={`mt-2 text-[11.5px] leading-5 truncate ${isDark ? 'text-white/55' : 'text-slate-500'}`}>{k.sub}</p>
-          </motion.div>
-        ))}
-      </div>
+          ))}
+        </div>
+      </motion.div>
 
       {error && (
         <div className="rounded-2xl border border-amber-500/25 bg-amber-500/10 p-5 flex items-start gap-3">
@@ -695,7 +831,11 @@ export default function EnhancedForecast() {
                 Historical
               </span>
               {(forecast?.meta?.weights || meta.weights) && (
-                <span className="px-3 py-1.5 rounded-xl bg-gradient-to-br from-rose-500/90 to-orange-500/90 text-white shadow">
+                <span className={`px-3 py-1.5 rounded-xl shadow ${
+                  isDark
+                    ? 'bg-orange-500 text-black'
+                    : 'bg-orange-500 text-white'
+                }`}>
                   Weights · {Object.entries(meta.weights || {}).length} models
                 </span>
               )}
@@ -750,67 +890,102 @@ export default function EnhancedForecast() {
         </motion.div>
       )}
 
-      {/* EXTERNAL CONTEXT */}
-      <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-5">
-        {[
-          {
-            icon: <CloudRain size={19} className="text-sky-500" />,
-            title: 'Weather',
-            value: weather ? `${weather.temperature?.toFixed(0) ?? '—'}°F` : '—',
-            sub: weather
-              ? `${weather.weather || 'Clear'} · Hum ${weather.humidity || 0}%${weather.rain ? ' · Rain' : ''}`
-              : 'Loading weather data…',
-            badge: weather?.rain > 0 ? { text: 'Rain · demand +', color: 'bg-sky-500/15 text-sky-500 border-sky-500/20' } : null,
-          },
-          {
-            icon: <Music size={19} className="text-violet-500" />,
-            title: 'Events',
-            value: `${events?.event_count || 0}`,
-            sub: events
-              ? `Next 48h · ${(events.total_expected_attendance || 0).toLocaleString()} attendees`
-              : 'Loading events…',
-            badge: (events?.event_count || 0) > 0 ? { text: `${events.event_count} upcoming`, color: 'bg-violet-500/15 text-violet-500 border-violet-500/20' } : null,
-          },
-          {
-            icon: <Train size={19} className="text-orange-500" />,
-            title: 'Transit',
-            value: `${Math.round(((externalFeatures?.features?.transit?.disruption_score || 0) * 100))}%`,
-            sub: (externalFeatures?.features?.transit?.disruption_score || 0) > 0.5 ? 'High disruption — expect more rides' : 'Normal subway operation',
-            badge: (externalFeatures?.features?.transit?.disruption_score || 0) > 0.5 ? { text: 'Disruption surge', color: 'bg-orange-500/15 text-orange-500 border-orange-500/20' } : null,
-          },
-          {
-            icon: <Plane size={19} className="text-emerald-500" />,
-            title: 'Airports',
-            value: 'JFK · LGA · EWR',
-            sub: `JFK ${Math.round(((externalFeatures?.features?.airports?.jfk_traffic || 0) * 100))}% · LGA ${Math.round(((externalFeatures?.features?.airports?.lga_traffic || 0) * 100))}% · EWR ${Math.round(((externalFeatures?.features?.airports?.ewr_traffic || 0) * 100))}%`,
-            badge: Math.round(((externalFeatures?.features?.airports?.jfk_traffic || 0) * 100)) > 70 ? { text: 'Peak air traffic', color: 'bg-emerald-500/15 text-emerald-500 border-emerald-500/20' } : null,
-          },
-        ].map((c, i) => (
-          <motion.div
-            key={i}
-            initial={{ opacity: 0, scale: 0.97 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.03 * i }}
-            className={`relative rounded-3xl border p-5 shadow-xl backdrop-blur-3xl overflow-hidden ${
-              isDark ? 'border-white/[0.08] bg-gradient-to-br from-[#121212]/90 via-[#0b0b0b]/90 to-[#050505]/90' : 'border-slate-200 bg-gradient-to-br from-white via-slate-50/60 to-white'
-            }`}
-          >
-            <div className="flex items-center justify-between mb-4">
-              <div className={`p-2.5 rounded-xl ${c.icon.props.className?.includes('sky') ? 'bg-sky-500/10' : c.icon.props.className?.includes('violet') ? 'bg-violet-500/10' : c.icon.props.className?.includes('orange') ? 'bg-orange-500/10' : 'bg-emerald-500/10'}`}>
-                {c.icon}
+      {/* EXTERNAL CONTEXT — single unified panel */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.02 }}
+        className={`rounded-3xl border shadow-2xl backdrop-blur-2xl overflow-hidden ${
+          isDark
+            ? 'border-white/[0.08] bg-gradient-to-br from-[#1a1a1a]/80 to-[#0a0a0a]/80'
+            : 'border-slate-200 bg-gradient-to-br from-white via-slate-50/40 to-white'
+        }`}
+      >
+        <div className={`px-6 md:px-7 pt-5 md:pt-6 pb-4 md:pb-4 border-b ${isDark ? 'border-white/[0.06]' : 'border-slate-100'}`}>
+          <div className="flex items-center gap-2">
+            <Zap size={15} className="text-orange-500" />
+            <span className={`text-[11px] font-black uppercase tracking-[0.22em] ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+              External Context
+            </span>
+          </div>
+        </div>
+        <div className="grid md:grid-cols-2 lg:grid-cols-4">
+          {[
+            {
+              icon: <CloudRain size={19} />,
+              title: 'Weather',
+              value: weather ? `${weather.temperature?.toFixed(0) ?? '—'}°F` : '—',
+              sub: weather
+                ? `${weather.weather || 'Clear'} · Hum ${weather.humidity || 0}%${weather.rain ? ' · Rain' : ''}`
+                : 'Loading weather data…',
+              badge: weather?.rain > 0 ? { text: 'Rain · demand +' } : null,
+            },
+            {
+              icon: <Music size={19} />,
+              title: 'Events',
+              value: `${events?.event_count || 0}`,
+              sub: events
+                ? `Next 48h · ${(events.total_expected_attendance || 0).toLocaleString()} attendees`
+                : 'Loading events…',
+              badge: (events?.event_count || 0) > 0 ? { text: `${events.event_count} upcoming` } : null,
+            },
+            {
+              icon: <Train size={19} />,
+              title: 'Transit',
+              value: `${Math.round(((externalFeatures?.features?.transit?.disruption_score || 0) * 100))}%`,
+              sub: (externalFeatures?.features?.transit?.disruption_score || 0) > 0.5 ? 'High disruption — expect more rides' : 'Normal subway operation',
+              badge: (externalFeatures?.features?.transit?.disruption_score || 0) > 0.5 ? { text: 'Disruption surge' } : null,
+              accent: true,
+            },
+            {
+              icon: <Plane size={19} />,
+              title: 'Airports',
+              value: 'JFK · LGA · EWR',
+              sub: `JFK ${Math.round(((externalFeatures?.features?.airports?.jfk_traffic || 0) * 100))}% · LGA ${Math.round(((externalFeatures?.features?.airports?.lga_traffic || 0) * 100))}% · EWR ${Math.round(((externalFeatures?.features?.airports?.ewr_traffic || 0) * 100))}%`,
+              badge: Math.round(((externalFeatures?.features?.airports?.jfk_traffic || 0) * 100)) > 70 ? { text: 'Peak air traffic' } : null,
+            },
+          ].map((c, i) => (
+            <div
+              key={i}
+              className={`p-5 md:p-6 relative ${
+                i < 3
+                  ? isDark
+                    ? 'lg:border-r border-white/[0.06] col-span-2 md:col-span-1 lg:col-span-1 lg:border-b-0' + (i === 0 || i === 1 ? ' border-b lg:border-b-0 border-white/[0.06]' : '')
+                    : 'lg:border-r border-slate-100 col-span-2 md:col-span-1 lg:col-span-1 lg:border-b-0' + (i === 0 || i === 1 ? ' border-b lg:border-b-0 border-slate-100' : '')
+                  : ''
+              } ${
+                c.accent
+                  ? isDark
+                    ? 'bg-orange-500/[0.04]'
+                    : 'bg-orange-50/40'
+                  : ''
+              }`}
+            >
+              <div className="flex items-center justify-between mb-3.5">
+                <div className={`p-2.5 rounded-xl ${
+                  c.accent
+                    ? (isDark ? 'bg-orange-500/15 text-orange-500' : 'bg-orange-500/10 text-orange-600')
+                    : (isDark ? 'bg-white/[0.04] text-slate-400' : 'bg-slate-100 text-slate-500')
+                }`}>
+                  {c.icon}
+                </div>
+                {c.badge && (
+                  <span className={`px-2.5 py-1 rounded-lg text-[9.5px] font-black uppercase tracking-wider border ${
+                    isDark
+                      ? 'bg-white/[0.03] text-slate-300 border-white/[0.08]'
+                      : 'bg-slate-50 text-slate-600 border-slate-200'
+                  }`}>
+                    {c.badge.text}
+                  </span>
+                )}
               </div>
-              {c.badge && (
-                <span className={`px-2.5 py-1 rounded-lg text-[9.5px] font-black uppercase tracking-wider border ${c.badge.color}`}>
-                  {c.badge.text}
-                </span>
-              )}
+              <p className={`text-[10.5px] font-black uppercase tracking-[0.2em] ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>{c.title}</p>
+              <div className={`mt-1.5 text-2xl font-black tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>{c.value}</div>
+              <p className={`mt-2 text-[11.5px] leading-5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{c.sub}</p>
             </div>
-            <p className={`text-[10.5px] font-black uppercase tracking-[0.2em] ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>{c.title}</p>
-            <div className={`mt-1.5 text-2xl font-black tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>{c.value}</div>
-            <p className={`mt-2 text-[11.5px] leading-5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{c.sub}</p>
-          </motion.div>
-        ))}
-      </div>
+          ))}
+        </div>
+      </motion.div>
 
       {/* BOTTOM GRID: Accuracy improvement + Feature importance */}
       <div className="grid lg:grid-cols-5 gap-5">
@@ -823,7 +998,7 @@ export default function EnhancedForecast() {
           }`}
         >
           <div className="flex items-center gap-2 mb-1.5">
-            <CheckCircle size={17} className="text-emerald-500" />
+            <CheckCircle size={17} className="text-orange-500" />
             <span className={`text-[11px] font-black uppercase tracking-[0.22em] ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
               Accuracy Delta
             </span>
@@ -844,15 +1019,19 @@ export default function EnhancedForecast() {
                     <div key={k}>
                       <div className="flex items-center justify-between mb-1.5">
                         <span className="flex items-center gap-2">
-                          <span className="w-2.5 h-2.5 rounded-full" style={{ background: chip.color }} />
+                          <span className={`w-2.5 h-2.5 rounded-full ${positive ? (isDark ? 'bg-orange-500' : 'bg-orange-500') : (isDark ? 'bg-slate-500' : 'bg-slate-400')}`} />
                           <span className={`text-[12px] font-bold uppercase tracking-wide ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>{chip.label}</span>
                           {comparison.selected_model === k && (
-                            <span className="px-1.5 py-0.5 rounded-md text-[9px] font-black uppercase bg-orange-500/15 text-orange-500 border border-orange-500/20">
+                            <span className={`px-1.5 py-0.5 rounded-md text-[9px] font-black uppercase border ${
+                              isDark
+                                ? 'bg-orange-500 text-black border-orange-500'
+                                : 'bg-orange-500 text-white border-orange-500'
+                            }`}>
                               WINNER
                             </span>
                           )}
                         </span>
-                        <span className={`text-[12px] font-black tabular-nums ${positive ? (isDark ? 'text-emerald-400' : 'text-emerald-700') : (isDark ? 'text-rose-400' : 'text-rose-700')}`}>
+                        <span className={`text-[12px] font-black tabular-nums ${isDark ? (positive ? 'text-orange-500' : 'text-slate-500') : (positive ? 'text-orange-600' : 'text-slate-500')}`}>
                           {positive ? '+' : ''}{v.toFixed(1)}%
                         </span>
                       </div>
@@ -861,19 +1040,22 @@ export default function EnhancedForecast() {
                           initial={{ width: 0 }}
                           animate={{ width: `${positive ? pct : 0}%` }}
                           transition={{ duration: 0.8, ease: 'easeOut' }}
-                          className="h-full rounded-full"
-                          style={{
-                            background: positive
-                              ? `linear-gradient(90deg, ${chip.color}cc, ${chip.color})`
-                              : (isDark ? 'rgba(244,63,94,0.6)' : 'rgba(244,63,94,0.7)'),
-                          }}
+                          className={`h-full rounded-full ${
+                            positive
+                              ? (isDark ? 'bg-gradient-to-r from-orange-500 to-orange-400' : 'bg-gradient-to-r from-orange-500 to-orange-400')
+                              : (isDark ? 'bg-slate-600/70' : 'bg-slate-400/70')
+                          }`}
                         />
                       </div>
                     </div>
                   );
                 })}
-              <div className={`mt-5 pt-4 border-t flex items-start gap-3 rounded-xl p-4 ${isDark ? 'border-white/[0.06] bg-emerald-500/5' : 'border-emerald-100 bg-emerald-50/50'}`}>
-                <Info size={17} className={`mt-0.5 shrink-0 ${isDark ? 'text-emerald-400' : 'text-emerald-700'}`} />
+              <div className={`mt-5 pt-4 border-t flex items-start gap-3 rounded-xl p-4 ${
+                isDark
+                  ? 'border-white/[0.06] bg-orange-500/[0.04]'
+                  : 'border-orange-100 bg-orange-50/60'
+              }`}>
+                <Info size={17} className={`mt-0.5 shrink-0 ${isDark ? 'text-orange-500' : 'text-orange-600'}`} />
                 <p className={`text-[12px] leading-6 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
                   <span className={`font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>Recommendation — </span>
                   {comparison.recommendation || `Use ${comparison.selected_model || 'Ensemble'} for this zone.`}
@@ -897,7 +1079,7 @@ export default function EnhancedForecast() {
           }`}
         >
           <div className="flex items-center gap-2 mb-1.5">
-            <Layers size={17} className="text-amber-500" />
+            <Layers size={17} className="text-orange-500" />
             <span className={`text-[11px] font-black uppercase tracking-[0.22em] ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
               Feature Drivers
             </span>
@@ -926,17 +1108,24 @@ export default function EnhancedForecast() {
                           initial={{ width: 0 }}
                           animate={{ width: `${pct}%` }}
                           transition={{ duration: 0.8, ease: 'easeOut' }}
-                          className="h-full rounded-full"
-                          style={{ background: 'linear-gradient(90deg, rgba(249,115,22,0.95), rgba(244,63,94,0.95))' }}
+                          className={`h-full rounded-full ${
+                            isDark
+                              ? 'bg-gradient-to-r from-orange-500 to-orange-400'
+                              : 'bg-gradient-to-r from-orange-500 to-orange-400'
+                          }`}
                         />
                       </div>
                     </div>
                   );
                 })}
               </div>
-              <div className={`rounded-2xl border p-5 ${isDark ? 'border-white/[0.06] bg-gradient-to-br from-[#0e0e0e] to-[#070707]' : 'border-slate-100 bg-gradient-to-br from-slate-50 to-white'}`}>
+              <div className={`rounded-2xl border p-5 ${
+                isDark
+                  ? 'border-white/[0.06] bg-gradient-to-br from-[#141414]/80 to-[#0a0a0a]/80'
+                  : 'border-slate-100 bg-gradient-to-br from-slate-50/80 to-white'
+              }`}>
                 <div className="flex items-center gap-2 mb-4">
-                  <Sparkles size={15} className="text-amber-500" />
+                  <Sparkles size={15} className="text-orange-500" />
                   <span className={`text-[11px] font-black uppercase tracking-[0.2em] ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
                     Top Individual Features
                   </span>
