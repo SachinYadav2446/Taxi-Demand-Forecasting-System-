@@ -382,24 +382,15 @@ export default function EnhancedForecast() {
     const fetchZones = async () => {
       setZonesLoading(true);
       try {
-        const endpoint = user?.role === 'operator' ? '/zones/company' : '/zones/';
-        const res = await api.get(endpoint);
+        // Always load ALL 263 zones — not just operator's pinned zones
+        const res = await api.get('/zones/');
         let availableZones = [];
-        if (user?.role === 'operator') {
-          availableZones = res.data;
-          const boroughGroups = {};
-          res.data.forEach((z) => {
-            const b = z.borough || 'Unknown';
-            if (!boroughGroups[b]) boroughGroups[b] = [];
-            boroughGroups[b].push(z);
-          });
-          setGroupedZones(boroughGroups);
-        } else {
-          Object.entries(res.data).forEach(([borough, arr]) => {
-            availableZones = [...availableZones, ...arr];
-            setGroupedZones(res.data);
-          });
-        }
+        const boroughGroups = {};
+        Object.entries(res.data).forEach(([borough, arr]) => {
+          availableZones = [...availableZones, ...arr];
+          boroughGroups[borough] = arr;
+        });
+        setGroupedZones(boroughGroups);
         setZones(availableZones);
         if (availableZones.length) {
           setSelectedZone((cur) => {
@@ -418,7 +409,7 @@ export default function EnhancedForecast() {
     fetchZones();
     fetchWeather();
     fetchEvents();
-  }, [user]);
+  }, []);
 
   const filteredGroupedZones = useMemo(() => {
     const q = zoneSearch.trim().toLowerCase();

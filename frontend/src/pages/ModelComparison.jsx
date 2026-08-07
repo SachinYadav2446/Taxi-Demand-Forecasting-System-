@@ -310,24 +310,14 @@ export default function ModelComparison() {
     const fetchZones = async () => {
       setZonesLoading(true);
       try {
-        const endpoint = user?.role === 'operator' ? '/zones/company' : '/zones/';
-        const res = await api.get(endpoint);
+        const res = await api.get('/zones/');
         let availableZones = [];
-        if (user?.role === 'operator') {
-          availableZones = res.data;
-          const boroughGroups = {};
-          res.data.forEach((z) => {
-            const b = z.borough || 'Unknown';
-            if (!boroughGroups[b]) boroughGroups[b] = [];
-            boroughGroups[b].push(z);
-          });
-          setGroupedZones(boroughGroups);
-        } else {
-          Object.entries(res.data).forEach(([borough, arr]) => {
-            availableZones = [...availableZones, ...arr];
-            setGroupedZones(res.data);
-          });
-        }
+        const boroughGroups = {};
+        Object.entries(res.data).forEach(([borough, arr]) => {
+          availableZones = [...availableZones, ...arr];
+          boroughGroups[borough] = arr;
+        });
+        setGroupedZones(boroughGroups);
         setZones(availableZones);
         if (availableZones.length) {
           setSelectedZone((cur) => {
@@ -344,7 +334,7 @@ export default function ModelComparison() {
       }
     };
     fetchZones();
-  }, [user]);
+  }, []);
 
   const filteredGroupedZones = useMemo(() => {
     const q = zoneSearch.trim().toLowerCase();
@@ -582,7 +572,29 @@ export default function ModelComparison() {
       )}
 
       {/* TOP KPI STRIP — single unified panel */}
-      {loading ? (
+      {loading && !comparison ? (
+        <div className={`rounded-3xl border p-6 shadow-xl ${isDark ? 'border-orange-500/20 bg-gradient-to-br from-orange-950/30 to-[#0a0a0a]' : 'border-orange-200 bg-gradient-to-br from-orange-50 to-white'}`}>
+          <div className="flex items-start gap-4">
+            <div className="mt-0.5 shrink-0">
+              <svg className="w-7 h-7 animate-spin text-orange-500" viewBox="0 0 24 24" fill="none">
+                <circle className="opacity-20" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
+                <path className="opacity-80" fill="currentColor" d="M4 12a8 8 0 018-8v3a5 5 0 00-5 5H4z" />
+              </svg>
+            </div>
+            <div>
+              <p className={`text-[13px] font-black uppercase tracking-[0.18em] ${isDark ? 'text-orange-400' : 'text-orange-600'}`}>
+                Training models…
+              </p>
+              <p className={`mt-1 text-[13px] leading-5 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
+                Training all models for this zone for the first time. This can take <span className="font-bold">30–90 seconds</span> depending on data volume.
+              </p>
+              <p className={`mt-2 text-[11.5px] ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                Subsequent requests will be served from cache instantly.
+              </p>
+            </div>
+          </div>
+        </div>
+      ) : loading ? (
         <LoadingCard isDark={isDark} />
       ) : comparison ? (
         <motion.div
@@ -623,9 +635,14 @@ export default function ModelComparison() {
                 icon: <Clock size={18} />,
                 eyebrow: 'Snapshot',
                 title: 'Generated at',
-                value: comparison.comparison_generated_at
-                  ? new Date(comparison.comparison_generated_at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
-                  : '—',
+                value: (() => {
+                  const ts = comparison.from_cache
+                    ? (comparison.cached_at || comparison.comparison_generated_at)
+                    : (comparison.comparison_generated_at || comparison.cached_at);
+                  return ts
+                    ? new Date(ts).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+                    : '—';
+                })(),
                 sub: comparison.from_cache ? 'Served from cache' : 'Freshly evaluated',
               },
             ].map((k, i) => (
