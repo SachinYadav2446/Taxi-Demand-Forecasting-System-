@@ -3,12 +3,21 @@ import { useOutletContext, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useTheme } from '../context/ThemeContext';
 import { api } from '../lib/axios';
-import { Settings, Palette, Lock, Sun, Moon, Check, AlertTriangle, Eye, EyeOff, Shield, User, ArrowLeft } from 'lucide-react';
+import { Settings, Palette, Lock, Sun, Moon, Check, AlertTriangle, Eye, EyeOff, Shield, User, ArrowLeft, Sparkles } from 'lucide-react';
+import { useOnboardingTour } from '../components/OnboardingTour';
 
 export default function SettingsPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { mode, setMode } = useTheme();
+  const { reset: resetTour } = useOnboardingTour();
+  const [tourReset, setTourReset] = useState(false);
+
+  const handleReplayTour = () => {
+    resetTour();
+    setTourReset(true);
+    navigate('/dashboard');
+  };
 
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -188,6 +197,27 @@ export default function SettingsPage() {
               {pwLoading ? 'Updating...' : 'Update Password'}
             </button>
           </form>
+        </div>
+      </div>
+
+      {/* ===== ONBOARDING TOUR ===== */}
+      <div className={`rounded-2xl border transition-colors duration-500 overflow-hidden ${
+        mode === 'light' ? 'bg-white border-slate-200 shadow-sm' : 'bg-[#0a0a0a] border-[#222]'
+      }`}>
+        <div className={`px-5 py-3 border-b flex items-center gap-2 ${mode === 'light' ? 'border-slate-100' : 'border-[#222]'}`}>
+          <Sparkles size={15} className="text-orange-400" />
+          <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Onboarding</span>
+        </div>
+        <div className="p-4 flex items-center justify-between gap-4 flex-wrap">
+          <div>
+            <p className={`text-sm font-semibold ${mode === 'light' ? 'text-black' : 'text-white'}`}>Platform Tour</p>
+            <p className="text-xs text-slate-500 mt-0.5">Replay the 6-step walkthrough that introduces all major features.</p>
+          </div>
+          <button onClick={handleReplayTour}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-orange-500 hover:bg-orange-400 text-black text-xs font-black uppercase tracking-wider transition-all shadow-[0_4px_15px_rgba(249,115,22,0.2)] active:scale-[0.97]">
+            <Sparkles size={14} />
+            Replay Tour
+          </button>
         </div>
       </div>
 
