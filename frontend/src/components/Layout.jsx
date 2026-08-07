@@ -7,6 +7,7 @@ import {
   MapPinned, Activity, LogOut, Home, Zap, TrendingUp, Layers,
   Building2, ChevronLeft, ChevronRight, Sparkles, User, CloudRain
 } from 'lucide-react';
+import OnboardingTour from './OnboardingTour';
 
 const ACCENT_CSS_MAP = {
   orange: { '400': '#fb923c', '500': '#f97316', '600': '#ea580c', glow: '249,115,22' },
@@ -172,6 +173,9 @@ export default function Layout() {
           onClose={() => setIsLogoutModalOpen(false)}
         />
       )}
+
+      {/* Onboarding tour — shows once for first-time users */}
+      <OnboardingTour />
 
       {/* Floating Toggle (Visible when sidebar is closed) */}
       <div className="fixed top-1/2 -translate-y-1/2 left-0 z-[60] flex items-center pointer-events-none">
